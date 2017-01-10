@@ -15,8 +15,11 @@ import scala.concurrent.{ExecutionContext, Future}
 
 case class Member(id: String, username: String, fullName: String, idBoards: Seq[String])
 
+case class Board(id: String, name: String)
+
 trait JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
   implicit val memberProtocol: RootJsonFormat[Member] = jsonFormat4(Member)
+  implicit val boardProtocol: RootJsonFormat[Board] = jsonFormat2(Board)
 }
 
 object Api {
@@ -30,6 +33,10 @@ class Api(key: String, token: String)(implicit actorSystem: ActorSystem) extends
 
   def member(memberId: String, params: Map[String, String] = Map())(implicit ec: ExecutionContext): Future[Member] = {
     request[Member](s"/1/members/$memberId", params)
+  }
+
+  def boards()(implicit ec: ExecutionContext): Future[Seq[Board]] = {
+    request[Seq[Board]](s"/1/member/me/boards")
   }
 
   private def request[T](path: String, params: Map[String, String] = Map())(implicit ec: ExecutionContext, unmarshaller: Unmarshaller[ResponseEntity, T]): Future[T] = {
