@@ -17,9 +17,15 @@ case class Member(id: String, username: String, fullName: String, idBoards: Seq[
 
 case class Board(id: String, name: String)
 
+case class TrelloList(id: String, name: String)
+
+case class Card(id: String, name: String, idList: String)
+
 trait JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
   implicit val memberProtocol: RootJsonFormat[Member] = jsonFormat4(Member)
   implicit val boardProtocol: RootJsonFormat[Board] = jsonFormat2(Board)
+  implicit val listProtocol: RootJsonFormat[TrelloList] = jsonFormat2(TrelloList)
+  implicit val cardProtocol: RootJsonFormat[Card] = jsonFormat3(Card)
 }
 
 object Api {
@@ -37,6 +43,14 @@ class Api(key: String, token: String)(implicit actorSystem: ActorSystem) extends
 
   def boards()(implicit ec: ExecutionContext): Future[Seq[Board]] = {
     request[Seq[Board]](s"/1/member/me/boards")
+  }
+
+  def openLists(idBoard: String)(implicit ec: ExecutionContext): Future[Seq[TrelloList]] = {
+    request[Seq[TrelloList]](s"/1/boards/$idBoard/lists/open")
+  }
+
+  def cards(idBoard: String)(implicit ec: ExecutionContext): Future[Seq[Card]] = {
+    request[Seq[Card]](s"/1/boards/$idBoard/cards/open")
   }
 
   private def request[T](path: String, params: Map[String, String] = Map())(implicit ec: ExecutionContext, unmarshaller: Unmarshaller[ResponseEntity, T]): Future[T] = {

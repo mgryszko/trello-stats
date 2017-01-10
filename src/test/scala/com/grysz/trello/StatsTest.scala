@@ -23,4 +23,14 @@ class StatsTest extends FlatSpec with Matchers {
     val boards = Await.result(api.boards(), 10 seconds)
     boards should not be empty
   }
+
+  it should "get board open lists" in {
+    val lists = Await.result(api.openLists("5783d18ebed64e477bda0535"), 10 seconds)
+    lists should not be empty
+  }
+
+  it should "get board open cards" in {
+    val cards = Await.result(api.cards("5783d18ebed64e477bda0535"), 10 seconds)
+    cards should not be empty
+  }
 }
