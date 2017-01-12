@@ -45,10 +45,10 @@ class Api(key: String, token: String)(implicit actorSystem: ActorSystem) extends
 
   def openListsWithCards(idBoard: String) (implicit ec: ExecutionContext): Future[StatsBoard] = {
     val cardsAndLists = openCards(idBoard) zip openLists(idBoard)
-    cardsAndLists.flatMap { case (cards, lists) => {
+    cardsAndLists.flatMap { case (cards, lists) =>
       val statsLists = lists.map(l => StatsList(l.id, l.name, findCardsOfList(cards, l.id)))
       Future.successful(StatsBoard(statsLists))
-    } }
+    }
   }
 
   private def findCardsOfList(cards: Seq[TrelloCard], idList: String) = cards.filter(_.idList == idList)
