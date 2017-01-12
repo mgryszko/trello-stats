@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{FlatSpec, Inspectors, Matchers}
 
-import scala.concurrent.Await
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 
 class StatsTest extends FlatSpec with Matchers with Inspectors {
@@ -12,21 +12,25 @@ class StatsTest extends FlatSpec with Matchers with Inspectors {
   implicit private val actorSystem = ActorSystem("TrelloApiIntegrationTests", config)
   import actorSystem.dispatcher
 
-  val api = Api(config.getString("trello.key"), config.getString("trello.token"))
-
   "Trello API" should "get board open lists" in {
-    val lists = Await.result(api.openLists("5783d18ebed64e477bda0535"), 10 seconds)
+    val lists = result(() => api.openLists(idBoard))
     lists should not be empty
   }
 
   it should "get board open cards" in {
-    val cards = Await.result(api.openCards("5783d18ebed64e477bda0535"), 10 seconds)
+    val cards = result(() => api.openCards(idBoard))
     cards should not be empty
   }
 
   it should "get board lists and cards" in {
-    val board = Await.result(api.openListsWithCards("5783d18ebed64e477bda0535"), 10 seconds)
+    val board = result(() => api.openListsWithCards(idBoard))
     board.lists should not be empty
     forAtLeast(1, board.lists) { list => list.cards should not be empty }
   }
+
+  val api = Api(config.getString("trello.key"), config.getString("trello.token"))
+
+  val idBoard = "5783d18ebed64e477bda0535"
+
+  def result[T](asynchOp: () => Future[T]): T = Await.result(asynchOp(), 10 seconds)
 }
