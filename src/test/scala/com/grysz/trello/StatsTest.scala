@@ -14,17 +14,7 @@ class StatsTest extends FlatSpec with Matchers with Inspectors {
 
   val api = Api(config.getString("trello.key"), config.getString("trello.token"))
 
-  "Trello API" should "get member" in {
-    val member = Await.result(api.member("me"), 10 seconds)
-    member.fullName should be("Marcin Gryszko")
-  }
-
-  it should "get member boards" in {
-    val boards = Await.result(api.boards(), 10 seconds)
-    boards should not be empty
-  }
-
-  it should "get board open lists" in {
+  "Trello API" should "get board open lists" in {
     val lists = Await.result(api.openLists("5783d18ebed64e477bda0535"), 10 seconds)
     lists should not be empty
   }

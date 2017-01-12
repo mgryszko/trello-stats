@@ -13,10 +13,6 @@ import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class Member(id: String, username: String, fullName: String, idBoards: Seq[String])
-
-case class Board(id: String, name: String)
-
 case class TrelloList(id: String, name: String)
 
 case class Card(id: String, name: String, idList: String)
@@ -26,8 +22,6 @@ case class StatsBoard(lists: Seq[StatsList])
 case class StatsList(id: String, name: String, cards: Seq[Card])
 
 trait JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
-  implicit val memberProtocol: RootJsonFormat[Member] = jsonFormat4(Member)
-  implicit val boardProtocol: RootJsonFormat[Board] = jsonFormat2(Board)
   implicit val listProtocol: RootJsonFormat[TrelloList] = jsonFormat2(TrelloList)
   implicit val cardProtocol: RootJsonFormat[Card] = jsonFormat3(Card)
 }
@@ -40,14 +34,6 @@ class Api(key: String, token: String)(implicit actorSystem: ActorSystem) extends
   private val endpoint = Uri("https://api.trello.com")
   private val authParams = Map("key" -> key, "token" -> token)
   private implicit val actorMaterializer = ActorMaterializer()
-
-  def member(memberId: String, params: Map[String, String] = Map())(implicit ec: ExecutionContext): Future[Member] = {
-    request[Member](s"/1/members/$memberId", params)
-  }
-
-  def boards()(implicit ec: ExecutionContext): Future[Seq[Board]] = {
-    request[Seq[Board]](s"/1/member/me/boards")
-  }
 
   def openLists(idBoard: String)(implicit ec: ExecutionContext): Future[Seq[TrelloList]] = {
     request[Seq[TrelloList]](s"/1/boards/$idBoard/lists/open")
