@@ -19,7 +19,7 @@ case class TrelloCard(id: String, name: String, idList: String)
 
 case class StatsBoard(lists: Seq[StatsList])
 
-case class StatsList(id: String, name: String, numCards: Int)
+case class StatsList(name: String, numCards: Int)
 
 trait JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
   implicit val listProtocol: RootJsonFormat[TrelloList] = jsonFormat2(TrelloList)
@@ -46,7 +46,7 @@ class Api(key: String, token: String)(implicit actorSystem: ActorSystem) extends
   def openListsWithCards(idBoard: String) (implicit ec: ExecutionContext): Future[StatsBoard] = {
     val cardsAndLists = openCards(idBoard) zip openLists(idBoard)
     cardsAndLists.flatMap { case (cards, lists) =>
-      val statsLists = lists.map(l => StatsList(l.id, l.name, countCardsOfList(cards, l.id)))
+      val statsLists = lists.map(l => StatsList(l.name, countCardsOfList(cards, l.id)))
       Future.successful(StatsBoard(statsLists))
     }
   }
