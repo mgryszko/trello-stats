@@ -15,15 +15,15 @@ import scala.concurrent.{ExecutionContext, Future}
 
 case class TrelloList(id: String, name: String)
 
-case class Card(id: String, name: String, idList: String)
+case class TrelloCard(id: String, name: String, idList: String)
 
 case class StatsBoard(lists: Seq[StatsList])
 
-case class StatsList(id: String, name: String, cards: Seq[Card])
+case class StatsList(id: String, name: String, cards: Seq[TrelloCard])
 
 trait JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
   implicit val listProtocol: RootJsonFormat[TrelloList] = jsonFormat2(TrelloList)
-  implicit val cardProtocol: RootJsonFormat[Card] = jsonFormat3(Card)
+  implicit val cardProtocol: RootJsonFormat[TrelloCard] = jsonFormat3(TrelloCard)
 }
 
 object Api {
@@ -39,8 +39,8 @@ class Api(key: String, token: String)(implicit actorSystem: ActorSystem) extends
     request[Seq[TrelloList]](s"/1/boards/$idBoard/lists/open")
   }
 
-  def openCards(idBoard: String)(implicit ec: ExecutionContext): Future[Seq[Card]] = {
-    request[Seq[Card]](s"/1/boards/$idBoard/cards/open")
+  def openCards(idBoard: String)(implicit ec: ExecutionContext): Future[Seq[TrelloCard]] = {
+    request[Seq[TrelloCard]](s"/1/boards/$idBoard/cards/open")
   }
 
   def openListsWithCards(idBoard: String) (implicit ec: ExecutionContext): Future[StatsBoard] = {
@@ -51,7 +51,7 @@ class Api(key: String, token: String)(implicit actorSystem: ActorSystem) extends
     } }
   }
 
-  private def findCardsOfList(cards: Seq[Card], idList: String) = cards.filter(_.idList == idList)
+  private def findCardsOfList(cards: Seq[TrelloCard], idList: String) = cards.filter(_.idList == idList)
 
   private def request[T](path: String, params: Map[String, String] = Map())(implicit ec: ExecutionContext, unmarshaller: Unmarshaller[ResponseEntity, T]): Future[T] = {
     Http().singleRequest(HttpRequest(uri = uri(path, params))).flatMap(resp => {
