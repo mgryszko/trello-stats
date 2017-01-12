@@ -19,7 +19,7 @@ case class TrelloCard(id: String, name: String, idList: String)
 
 case class StatsBoard(lists: Seq[StatsList])
 
-case class StatsList(id: String, name: String, cards: Seq[TrelloCard])
+case class StatsList(id: String, name: String, numCards: Int)
 
 trait JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
   implicit val listProtocol: RootJsonFormat[TrelloList] = jsonFormat2(TrelloList)
@@ -46,12 +46,12 @@ class Api(key: String, token: String)(implicit actorSystem: ActorSystem) extends
   def openListsWithCards(idBoard: String) (implicit ec: ExecutionContext): Future[StatsBoard] = {
     val cardsAndLists = openCards(idBoard) zip openLists(idBoard)
     cardsAndLists.flatMap { case (cards, lists) =>
-      val statsLists = lists.map(l => StatsList(l.id, l.name, findCardsOfList(cards, l.id)))
+      val statsLists = lists.map(l => StatsList(l.id, l.name, countCardsOfList(cards, l.id)))
       Future.successful(StatsBoard(statsLists))
     }
   }
 
-  private def findCardsOfList(cards: Seq[TrelloCard], idList: String) = cards.filter(_.idList == idList)
+  private def countCardsOfList(cards: Seq[TrelloCard], idList: String) = cards.count(_.idList == idList)
 
   private def request[T](path: String, params: Map[String, String] = Map())(implicit ec: ExecutionContext, unmarshaller: Unmarshaller[ResponseEntity, T]): Future[T] = {
     Http().singleRequest(HttpRequest(uri = uri(path, params))).flatMap(resp => {

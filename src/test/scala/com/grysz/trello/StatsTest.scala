@@ -25,7 +25,7 @@ class StatsTest extends FlatSpec with Matchers with Inspectors {
   it should "get board lists and cards" in {
     val board = result(() => api.openListsWithCards(idBoard))
     board.lists should not be empty
-    forAtLeast(1, board.lists) { list => list.cards should not be empty }
+    forAtLeast(1, board.lists) { list => list.numCards should be >= 1 }
   }
 
   val api = Api(config.getString("trello.key"), config.getString("trello.token"))
