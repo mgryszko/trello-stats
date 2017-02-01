@@ -6,11 +6,23 @@ import org.scalatest.{FlatSpec, Inspectors, Matchers}
 
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
+import scalaz.Monad
 
 class StatsTest extends FlatSpec with Matchers with Inspectors {
   val config = ConfigFactory.load()
   implicit private val actorSystem = ActorSystem("TrelloApiIntegrationTests", config)
   import actorSystem.dispatcher
+  import scalaz.std.scalaFuture
+  val monadFuture: Monad[Future] = scalaFuture.futureInstance
+
+  val api = AsyncApi(config.getString("trello.key"), config.getString("trello.token"))
+
+
+  val stats = new Stats[Future](api) {
+    val M = monadFuture
+  }
+
+  val idBoard = "5783d18ebed64e477bda0535"
 
   "Trello stats" should "get board lists and cards" in {
     val board = result(() => stats.openListsWithCards(idBoard))
@@ -20,11 +32,6 @@ class StatsTest extends FlatSpec with Matchers with Inspectors {
       list.numCards should be >= 1
     }
   }
-
-  val api = Api(config.getString("trello.key"), config.getString("trello.token"))
-  val stats = new Stats(api)
-
-  val idBoard = "5783d18ebed64e477bda0535"
 
   def result[T](asynchOp: () => Future[T]): T = Await.result(asynchOp(), 10 seconds)
 }

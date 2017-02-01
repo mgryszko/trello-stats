@@ -1,17 +1,20 @@
 package com.grysz.trello
 
-import scala.concurrent.{ExecutionContext, Future}
-
 case class StatsBoard(lists: Seq[StatsList])
 
 case class StatsList(name: String, numCards: Int)
 
-class Stats(api: Api) {
-  def openListsWithCards(idBoard: String)(implicit ec: ExecutionContext): Future[StatsBoard] = {
-    val cardsAndLists = api.openCards(idBoard) zip api.openLists(idBoard)
-    cardsAndLists.flatMap { case (cards, lists) =>
-      val statsLists = lists.map(l => StatsList(l.name, countCardsOfList(cards, l.id)))
-      Future.successful(StatsBoard(statsLists))
+abstract class Stats[P[_]](api: Api[P]) {
+  import scalaz.Monad
+  import scalaz.syntax.monad._
+  implicit val M: Monad[P]
+
+  def openListsWithCards(idBoard: String): P[StatsBoard] = {
+    api.openCards(idBoard) >>= { cards =>
+      api.openLists(idBoard) >>= { lists =>
+        val statsLists = lists.map(l => StatsList(l.name, countCardsOfList(cards, l.id)))
+        StatsBoard(statsLists).point
+      }
     }
   }
 
