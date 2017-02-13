@@ -12,15 +12,11 @@ class StatsTest extends FlatSpec with Matchers with Inspectors {
   val config = ConfigFactory.load()
   implicit private val actorSystem = ActorSystem("TrelloApiIntegrationTests", config)
   import actorSystem.dispatcher
+
   import scalaz.std.scalaFuture
-  val monadFuture: Monad[Future] = scalaFuture.futureInstance
-
-  val api = AsyncApi(config.getString("trello.key"), config.getString("trello.token"))
-
-
-  val stats = new Stats[Future](api) {
-    val M = monadFuture
-  }
+  implicit val monadFuture: Monad[Future] = scalaFuture.futureInstance
+  implicit val api = AsyncApi(config.getString("trello.key"), config.getString("trello.token"))
+  val stats = Stats[Future]
 
   val idBoard = "5783d18ebed64e477bda0535"
 
