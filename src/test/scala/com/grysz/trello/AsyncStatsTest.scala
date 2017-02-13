@@ -8,14 +8,14 @@ import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 import scalaz.Monad
 
-class StatsTest extends FlatSpec with Matchers with Inspectors {
+class AsyncStatsTest extends FlatSpec with Matchers with Inspectors {
   val config = ConfigFactory.load()
   implicit private val actorSystem = ActorSystem("TrelloApiIntegrationTests", config)
   import actorSystem.dispatcher
 
+  implicit val api = AsyncApi(config.getString("trello.key"), config.getString("trello.token"))
   import scalaz.std.scalaFuture
   implicit val monadFuture: Monad[Future] = scalaFuture.futureInstance
-  implicit val api = AsyncApi(config.getString("trello.key"), config.getString("trello.token"))
   val stats = Stats[Future]
 
   val idBoard = "5783d18ebed64e477bda0535"
