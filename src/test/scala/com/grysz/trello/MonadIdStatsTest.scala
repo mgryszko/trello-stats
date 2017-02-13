@@ -7,17 +7,16 @@ import scalaz.Id.Id
 class MonadIdStatsTest extends FlatSpec with Matchers with Inspectors {
 
   implicit val api = new Api[Id] {
-    def openLists(idBoard: String): Seq[TrelloList] = List(
+    def openLists(idBoard: String): Seq[TrelloList] = Seq(
       TrelloList("::idList1::", "::list1::"),
       TrelloList("::idList2::", "::list2::")
     )
 
-    def openCards(idBoard: String): Seq[TrelloCard] =
-      List(
-        TrelloCard("::idCard1::", "::card1::", "::idList1::"),
-        TrelloCard("::idCard2::", "::card2::", "::idList1::"),
-        TrelloCard("::idCard3::", "::card3::", "::idList2::")
-      )
+    def openCards(idBoard: String): Seq[TrelloCard] = Seq(
+      TrelloCard("::idCard1::", "::card1::", "::idList1::"),
+      TrelloCard("::idCard2::", "::card2::", "::idList1::"),
+      TrelloCard("::idCard3::", "::card3::", "::idList2::")
+    )
   }
 
   val stats = Stats[Id]
