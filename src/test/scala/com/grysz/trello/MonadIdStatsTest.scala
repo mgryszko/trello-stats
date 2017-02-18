@@ -17,6 +17,8 @@ class MonadIdStatsTest extends FlatSpec with Matchers with Inspectors {
       TrelloCard("::idCard2::", "::card2::", "::idList1::"),
       TrelloCard("::idCard3::", "::card3::", "::idList2::")
     )
+
+    def cardActions(id: String): Seq[TrelloCardAction] = ???
   }
 
   val stats = Stats[Id]

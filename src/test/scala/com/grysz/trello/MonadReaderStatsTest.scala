@@ -17,6 +17,8 @@ class MonadReaderStatsTest extends FlatSpec with Matchers with Inspectors {
     def openLists(idBoard: String): Program[Seq[TrelloList]] = M.ask >>= (t => M.point(t.lists))
 
     def openCards(idBoard: String): Program[Seq[TrelloCard]] = M.ask >>= (t => M.point(t.cards))
+
+    def cardActions(id: String): Program[Seq[TrelloCardAction]] = ???
   }
 
   val stats = Stats[Program]
