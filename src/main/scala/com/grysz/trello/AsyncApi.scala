@@ -29,8 +29,8 @@ trait JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
     }
   }
   implicit val listProtocol: RootJsonFormat[TrelloList] = jsonFormat2(TrelloList)
-  implicit val cardProtocol: RootJsonFormat[TrelloCard] = jsonFormat3(TrelloCard)
-  implicit val cardActionProtocol: RootJsonFormat[TrelloCardAction] = jsonFormat2(TrelloCardAction)
+  implicit val cardProtocol: RootJsonFormat[Card] = jsonFormat3(Card)
+  implicit val cardActionProtocol: RootJsonFormat[CardAction] = jsonFormat2(CardAction)
 }
 
 object AsyncApi {
@@ -49,12 +49,12 @@ class AsyncApi(key: String, token: String)(implicit actorSystem: ActorSystem, ex
     request[Seq[TrelloList]](s"/1/boards/$idBoard/lists/open")
   }
 
-  def openCards(idBoard: String): Future[Seq[TrelloCard]] = {
-    request[Seq[TrelloCard]](s"/1/boards/$idBoard/cards/open")
+  def openCards(idBoard: String): Future[Seq[Card]] = {
+    request[Seq[Card]](s"/1/boards/$idBoard/cards/open")
   }
 
-  def cardActions(id: String): Future[Seq[TrelloCardAction]] = {
-    request[Seq[TrelloCardAction]](s"/1/cards/$id/actions", Map("filter" -> "createCard,updateCard"))
+  def cardActions(id: String): Future[Seq[CardAction]] = {
+    request[Seq[CardAction]](s"/1/cards/$id/actions", Map("filter" -> "createCard,updateCard"))
   }
 
   private def request[T](path: String, params: Map[String, String] = Map())

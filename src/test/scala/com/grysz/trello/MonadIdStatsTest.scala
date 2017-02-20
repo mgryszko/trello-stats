@@ -12,13 +12,13 @@ class MonadIdStatsTest extends FlatSpec with Matchers with Inspectors {
       TrelloList("::idList2::", "::list2::")
     )
 
-    def openCards(idBoard: String): Seq[TrelloCard] = Seq(
-      TrelloCard("::idCard1::", "::card1::", "::idList1::"),
-      TrelloCard("::idCard2::", "::card2::", "::idList1::"),
-      TrelloCard("::idCard3::", "::card3::", "::idList2::")
+    def openCards(idBoard: String): Seq[Card] = Seq(
+      Card("::idCard1::", "::card1::", "::idList1::"),
+      Card("::idCard2::", "::card2::", "::idList1::"),
+      Card("::idCard3::", "::card3::", "::idList2::")
     )
 
-    def cardActions(id: String): Seq[TrelloCardAction] = ???
+    def cardActions(id: String): Seq[CardAction] = ???
   }
 
   val stats = Stats[Id]

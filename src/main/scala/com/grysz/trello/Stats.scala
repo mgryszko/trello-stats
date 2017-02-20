@@ -19,7 +19,7 @@ trait Stats[P[_]] {
     })
   }
 
-  private def countCardsOfList(cards: Seq[TrelloCard], idList: String) = cards.count(_.idList == idList)
+  private def countCardsOfList(cards: Seq[Card], idList: String) = cards.count(_.idList == idList)
 }
 
 object Stats {

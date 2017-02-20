@@ -6,7 +6,7 @@ import scalaz.{MonadReader, Reader}
 
 class MonadReaderStatsTest extends FlatSpec with Matchers with Inspectors {
 
-  case class Trello(lists: Seq[TrelloList], cards: Seq[TrelloCard])
+  case class Trello(lists: Seq[TrelloList], cards: Seq[Card])
 
   import scalaz.syntax.monad._
 
@@ -16,9 +16,9 @@ class MonadReaderStatsTest extends FlatSpec with Matchers with Inspectors {
   implicit val api = new Api[Program] {
     def openLists(idBoard: String): Program[Seq[TrelloList]] = M.ask >>= (t => M.point(t.lists))
 
-    def openCards(idBoard: String): Program[Seq[TrelloCard]] = M.ask >>= (t => M.point(t.cards))
+    def openCards(idBoard: String): Program[Seq[Card]] = M.ask >>= (t => M.point(t.cards))
 
-    def cardActions(id: String): Program[Seq[TrelloCardAction]] = ???
+    def cardActions(id: String): Program[Seq[CardAction]] = ???
   }
 
   val stats = Stats[Program]
@@ -31,9 +31,9 @@ class MonadReaderStatsTest extends FlatSpec with Matchers with Inspectors {
       TrelloList("::idList2::", "::list2::")
     ),
     cards = Seq(
-      TrelloCard("::idCard1::", "::card1::", "::idList1::"),
-      TrelloCard("::idCard2::", "::card2::", "::idList1::"),
-      TrelloCard("::idCard3::", "::card3::", "::idList2::")
+      Card("::idCard1::", "::card1::", "::idList1::"),
+      Card("::idCard2::", "::card2::", "::idList1::"),
+      Card("::idCard3::", "::card3::", "::idList2::")
     )
   )
 
