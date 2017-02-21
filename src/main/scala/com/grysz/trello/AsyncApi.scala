@@ -46,7 +46,6 @@ trait JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
 
     private def readCreateCardAction(fields: Map[String, JsValue]) =
       CreateCardAction(
-        id = actionId(fields),
         date = date(fields),
         idList = listId(data(fields)("list"))
       )
@@ -54,14 +53,12 @@ trait JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
     private def readUpdateCardAction(fields: Map[String, JsValue]) = {
       val dataFields = data(fields)
       UpdateListAction(
-        id = actionId(fields),
         date = date(fields),
         idListBefore = listId(dataFields("listBefore")),
         idListAfter = listId(dataFields("listAfter"))
       )
     }
 
-    private def actionId(fields: Map[String, JsValue]) = fields("id").toString()
     private def date(fields: Map[String, JsValue]) = fields("date").convertTo[Instant]
     private def data(fields: Map[String, JsValue]) = fields("data").asJsObject().fields
     private def listId(fields: JsValue) = fields.asJsObject().fields("id").toString()
