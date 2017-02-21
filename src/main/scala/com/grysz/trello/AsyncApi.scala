@@ -18,8 +18,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
   implicit object InstantJsonFormat extends JsonFormat[Instant] {
-    override def write(instant: Instant) = JsString(instant.toString)
-    override def read(json: JsValue) = json match {
+    def write(instant: Instant) = JsString(instant.toString)
+    def read(json: JsValue): Instant = json match {
       case JsString(s) => try {
         Instant.parse(s)
       } catch {
@@ -30,7 +30,38 @@ trait JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
   }
   implicit val listProtocol: RootJsonFormat[TrelloList] = jsonFormat2(TrelloList)
   implicit val cardProtocol: RootJsonFormat[Card] = jsonFormat3(Card)
-  implicit val cardActionProtocol: RootJsonFormat[CardAction] = jsonFormat2(CardAction)
+
+  implicit object CardActionJsonFormat extends RootJsonFormat[CardAction] {
+    def write(instant: CardAction) = ??? // not supported
+
+    def read(json: JsValue): CardAction = {
+      val fields: Map[String, JsValue] = json.asJsObject().fields
+      val cardType = fields("type")
+      cardType match {
+        case JsString("createCard") => readCreateCardAction(fields)
+        case JsString("updateCard") => readUpdateCardAction(fields)
+        case _ => deserializationError(s"action $cardType not supported")
+      }
+    }
+
+    private def readCreateCardAction(fields: Map[String, JsValue]) =
+      CreateCardAction(id = actionId(fields), date = date(fields))
+
+    private def readUpdateCardAction(fields: Map[String, JsValue]) = {
+      val dataFields = fields("data").asJsObject().fields
+      UpdateListAction(
+        id = actionId(fields),
+        date = date(fields),
+        idListBefore = listId(dataFields("listBefore")),
+        idListAfter = listId(dataFields("listAfter"))
+      )
+    }
+
+    private def actionId(fields: Map[String, JsValue]) = fields("id").toString()
+    private def date(fields: Map[String, JsValue]) = fields("date").convertTo[Instant]
+    private def listId(fields: JsValue) = fields.asJsObject().fields("id").toString()
+  }
+
 }
 
 object AsyncApi {
@@ -54,7 +85,8 @@ class AsyncApi(key: String, token: String)(implicit actorSystem: ActorSystem, ex
   }
 
   def cardActions(id: String): Future[Seq[CardAction]] = {
-    request[Seq[CardAction]](s"/1/cards/$id/actions", Map("filter" -> "createCard,updateCard"))
+    request[Seq[CardAction]](s"/1/cards/$id/actions",
+      Map("filter" -> "createCard,updateCard:idList", "fields" -> "type,date,data"))
   }
 
   private def request[T](path: String, params: Map[String, String] = Map())

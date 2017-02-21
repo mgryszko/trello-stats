@@ -30,8 +30,13 @@ class AsyncApiTest extends FlatSpec with Matchers with Inspectors {
   }
 
   it should "get card actions" in {
-    val actions = result(() => api.cardActions(idCard))
+    // TODO order by date asc
+    val actions = result(() => api.cardActions(idCard)).reverse
     actions should not be empty
+    actions.head shouldBe a [CreateCardAction]
+    forAll(actions.tail) { action =>
+      action shouldBe a [UpdateListAction]
+    }
   }
 
   def result[T](asynchOp: () => Future[T]): T = Await.result(asynchOp(), 10 seconds)
