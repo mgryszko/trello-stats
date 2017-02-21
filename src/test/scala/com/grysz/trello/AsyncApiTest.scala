@@ -1,7 +1,5 @@
 package com.grysz.trello
 
-import java.time.Instant
-
 import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{FlatSpec, Inspectors, Matchers}
