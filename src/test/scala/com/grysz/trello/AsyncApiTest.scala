@@ -30,8 +30,7 @@ class AsyncApiTest extends FlatSpec with Matchers with Inspectors {
   }
 
   it should "get card actions" in {
-    // TODO order by date asc
-    val actions = result(() => api.cardActions(idCard)).reverse
+    val actions = result(() => api.cardActions(idCard)).sortBy(_.date)
     actions should not be empty
     actions.head shouldBe a [CreateCardAction]
     forAll(actions.tail) { action =>

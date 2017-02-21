@@ -6,7 +6,11 @@ case class TrelloList(id: String, name: String)
 
 case class Card(id: String, name: String, idList: String)
 
-sealed abstract class CardAction
+sealed abstract class CardAction {
+  val id: String
+  val date: Instant
+}
+
 case class CreateCardAction(id: String, date: Instant) extends CardAction
 case class UpdateListAction(id: String, date: Instant, idListBefore: String, idListAfter: String) extends CardAction
 
