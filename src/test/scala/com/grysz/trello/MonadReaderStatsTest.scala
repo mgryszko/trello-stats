@@ -63,9 +63,9 @@ class MonadReaderStatsTest extends FlatSpec with Matchers with Inspectors {
   )
 
   "Trello stats" should "get board lists and cards" in {
-    val board = stats.openListsWithCards(idBoard).run(trello)
+    val numCardsByList = stats.numCardsByList(idBoard).run(trello)
 
-    board.lists should equal (Seq(StatsList("list1", 2), StatsList("list2", 1)))
+    numCardsByList should equal (Map("list1" -> 2, "list2" -> 1))
   }
 
   it should "calculate how much time did a card spent in every list" in {

@@ -4,20 +4,15 @@ import java.time.{Duration, Instant}
 
 import scalaz.Applicative
 
-case class StatsBoard(lists: Seq[StatsList])
-
-case class StatsList(name: String, numCards: Int)
-
 trait Stats[P[_]] {
   import scalaz.syntax.applicative._
 
   implicit val A: Applicative[P]
   val api: Api[P]
 
-  def openListsWithCards(idBoard: String): P[StatsBoard] = {
+  def numCardsByList(idBoard: String): P[Map[String, Int]] = {
     (api.openCards(idBoard) |@| api.openLists(idBoard))((cards, lists) => {
-      val statsLists = lists.map(l => StatsList(l.name, countCardsOfList(cards, l.id)))
-      StatsBoard(statsLists)
+      lists.map(l => (l.name, countCardsOfList(cards, l.id))).toMap
     })
   }
 
