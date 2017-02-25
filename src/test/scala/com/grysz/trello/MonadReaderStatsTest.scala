@@ -71,9 +71,9 @@ class MonadReaderStatsTest extends FlatSpec with Matchers with Inspectors {
   it should "calculate how much time did a card spent in every list" in {
     val now = Instant.now()
 
-    val listsByTimesSpent = stats.timeSpentInLists("idCard1").run(trello)
+    val timesByList = stats.timeSpentInLists("idCard1").run(trello)
 
-    (listsByTimesSpent - idFinalList) should equal (expectedListsByTimeSpent)
-    listsByTimesSpent(idFinalList) should be >= Duration.between(timeEnteredLastList, now)
+    (timesByList - idFinalList) should equal (expectedListsByTimeSpent)
+    timesByList(idFinalList) should be >= Duration.between(timeEnteredLastList, now)
   }
 }
