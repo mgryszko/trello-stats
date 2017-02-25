@@ -10,7 +10,7 @@ sealed abstract class CardAction {
   val date: Instant
 }
 
-case class CreateCardAction(date: Instant, idList: String) extends CardAction
+case class CreateCardAction(date: Instant, listName: String) extends CardAction
 case class UpdateListAction(date: Instant, idListBefore: String, idListAfter: String) extends CardAction
 
 trait Api[P[_]] {

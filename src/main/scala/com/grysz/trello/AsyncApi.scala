@@ -47,21 +47,21 @@ trait JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
     private def readCreateCardAction(fields: Map[String, JsValue]) =
       CreateCardAction(
         date = date(fields),
-        idList = listId(data(fields)("list"))
+        listName = listName(data(fields)("list"))
       )
 
     private def readUpdateCardAction(fields: Map[String, JsValue]) = {
       val dataFields = data(fields)
       UpdateListAction(
         date = date(fields),
-        idListBefore = listId(dataFields("listBefore")),
-        idListAfter = listId(dataFields("listAfter"))
+        idListBefore = listName(dataFields("listBefore")),
+        idListAfter = listName(dataFields("listAfter"))
       )
     }
 
     private def date(fields: Map[String, JsValue]) = fields("date").convertTo[Instant]
     private def data(fields: Map[String, JsValue]) = fields("data").asJsObject().fields
-    private def listId(fields: JsValue) = fields.asJsObject().fields("id").toString()
+    private def listName(fields: JsValue) = fields.asJsObject().fields("name").toString()
   }
 
 }

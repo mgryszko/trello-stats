@@ -20,11 +20,11 @@ trait Stats[P[_]] {
 
   sealed abstract class CardTransition {
     val date: Instant
-    val idList: String
+    val listName: String
   }
-  case class CardEnteredList(date: Instant, idList: String) extends CardTransition
-  case class CardLeftList(date: Instant, idList: String) extends CardTransition
-  case class CardStillInList(idList: String) extends CardTransition {
+  case class CardEnteredList(date: Instant, listName: String) extends CardTransition
+  case class CardLeftList(date: Instant, listName: String) extends CardTransition
+  case class CardStillInList(listName: String) extends CardTransition {
     val date: Instant = Instant.now()
   }
 
@@ -39,7 +39,7 @@ trait Stats[P[_]] {
 
   private def toTransitions(actions: Seq[CardAction]): Seq[CardTransition] = {
     val transitions = actions.flatMap(toTransition)
-    transitions ++ Seq(CardStillInList(transitions.last.idList))
+    transitions ++ Seq(CardStillInList(transitions.last.listName))
   }
 
   private def toTransition(action: CardAction): Seq[CardTransition] = action match {
@@ -50,7 +50,7 @@ trait Stats[P[_]] {
   private def tupled[A](xs: Iterable[A]): Seq[(A, A)] = xs.grouped(2).map { x => (x.head, x.tail.head) }.toSeq
 
   private def durationInList(transitions: Seq[(CardTransition, CardTransition)]) = transitions.map {
-    case (start, end) => (start.idList, Duration.between(start.date, end.date))
+    case (start, end) => (start.listName, Duration.between(start.date, end.date))
   }
 }
 
