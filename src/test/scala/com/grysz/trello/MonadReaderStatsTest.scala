@@ -46,7 +46,8 @@ class MonadReaderStatsTest extends FlatSpec with Matchers with Inspectors {
         UpdateListAction(Instant.parse("2016-10-10T07:23:47.456Z"), "list1", "list2"),
         UpdateListAction(Instant.parse("2016-10-17T07:32:06.068Z"), "list2", "list3"),
         UpdateListAction(Instant.parse("2016-10-18T07:25:02.787Z"), "list3", "list4"),
-        UpdateListAction(Instant.parse("2016-10-28T11:31:29.960Z"), "list4", "list5"),
+        UpdateListAction(Instant.parse("2016-10-22T14:01:15.128Z"), "list4", "list2"),
+        UpdateListAction(Instant.parse("2016-10-28T11:31:29.960Z"), "list2", "list5"),
         UpdateListAction(Instant.parse("2016-11-10T17:53:54.378Z"), "list5", "list6"),
         UpdateListAction(timeEnteredLastList, "idList6", idFinalList)
       )
@@ -55,9 +56,9 @@ class MonadReaderStatsTest extends FlatSpec with Matchers with Inspectors {
 
   val expectedListsByTimeSpent = Map(
     "list1" -> Duration.parse("PT64H37M21.316S"),
-    "list2" -> Duration.parse("PT168H8M18.612S"),
+    "list2" -> Duration.parse("PT309H38M33.444S"),
     "list3" -> Duration.parse("PT23H52M56.719S"),
-    "list4" -> Duration.parse("PT244H6M27.173S"),
+    "list4" -> Duration.parse("PT102H36M12.341S"),
     "list5" -> Duration.parse("PT318H22M24.418S"),
     "list6" -> Duration.parse("PT134H30M32.215S")
   )

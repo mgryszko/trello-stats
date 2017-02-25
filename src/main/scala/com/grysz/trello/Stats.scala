@@ -34,7 +34,7 @@ trait Stats[P[_]] {
       .map(toTransitions)
       .map(tupled)
       .map(durationInList)
-      .map(_.toMap)
+      .map(toMap)
   }
 
   private def toTransitions(actions: Seq[CardAction]): Seq[CardTransition] = {
@@ -52,6 +52,12 @@ trait Stats[P[_]] {
   private def durationInList(transitions: Seq[(CardTransition, CardTransition)]) = transitions.map {
     case (start, end) => (start.listName, Duration.between(start.date, end.date))
   }
+
+  private def toMap(transitions: Seq[(String, Duration)]): Map[String, Duration] =
+    transitions.foldLeft(Map.empty[String, Duration]) { case (listsByTime, (listName, duration)) =>
+      val summedDuration = listsByTime.get(listName).fold(duration)(_.plus(duration))
+      listsByTime + (listName -> summedDuration)
+    }
 }
 
 object Stats {
