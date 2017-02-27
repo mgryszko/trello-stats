@@ -2,11 +2,11 @@ package com.grysz.trello
 
 import java.time.{Duration, Instant}
 
-import org.scalatest.{FlatSpec, Inspectors, Matchers}
+import org.scalatest.{FlatSpec, Matchers}
 
 import scalaz.{MonadReader, Reader}
 
-class MonadReaderStatsTest extends FlatSpec with Matchers with Inspectors {
+class MonadReaderStatsTest extends FlatSpec with Matchers {
 
   case class Trello(lists: Seq[TrelloList], cards: Seq[Card], actions: Map[String, Seq[CardAction]])
 
