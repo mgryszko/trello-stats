@@ -2,18 +2,19 @@ package com.grysz.trello
 
 import java.time.{Duration, Instant}
 
-import scalaz.Applicative
+import scalaz.Monad
 
 trait Stats[P[_]] {
-  import scalaz.syntax.applicative._
+  import scalaz.syntax.monad._
 
-  implicit val A: Applicative[P]
+  implicit val M: Monad[P]
   val api: Api[P]
 
   def numCardsByList(idBoard: String): P[Map[String, Int]] = {
-    (api.openCards(idBoard) |@| api.openLists(idBoard))((cards, lists) => {
-      lists.map(l => (l.name, countCardsOfList(cards, l.id))).toMap
-    })
+    for {
+      cards <- api.openCards(idBoard)
+      lists <- api.openLists(idBoard)
+    } yield lists.map(l => (l.name, countCardsOfList(cards, l.id))).toMap
   }
 
   private def countCardsOfList(cards: Seq[Card], idList: String) = cards.count(_.idList == idList)
@@ -29,12 +30,12 @@ trait Stats[P[_]] {
   }
 
   def timeSpentInLists(idCard: String): P[Map[String, Duration]] = {
-    api.cardActions(idCard)
-      .map(_.sortBy(_.date))
-      .map(toTransitions)
-      .map(tupled)
-      .map(durationInList)
-      .map(toMap)
+    for {
+      actions <- api.cardActions(idCard)
+      chronologicalActions <- actions.sortBy(_.date).point
+      transitions <- tupled(toTransitions(chronologicalActions)).point
+      timesByList <- durationInList(transitions).point
+    } yield toMap(timesByList)
   }
 
   private def toTransitions(actions: Seq[CardAction]): Seq[CardTransition] = {
@@ -61,8 +62,8 @@ trait Stats[P[_]] {
 }
 
 object Stats {
-  def apply[P[_]: Applicative: Api] = new Stats[P] {
-    val A: Applicative[P] = implicitly
+  def apply[P[_]: Monad: Api] = new Stats[P] {
+    val M: Monad[P] = implicitly
     val api: Api[P] = implicitly
   }
 }
