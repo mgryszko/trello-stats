@@ -4,7 +4,7 @@ import java.time.{Duration, Instant}
 
 import org.scalatest.{FlatSpec, Matchers}
 
-import scalaz.{MonadReader, Reader}
+import scalaz.{Monad, MonadReader, Reader}
 
 class MonadReaderStatsTest extends FlatSpec with Matchers {
 
@@ -13,17 +13,21 @@ class MonadReaderStatsTest extends FlatSpec with Matchers {
   import scalaz.syntax.monad._
 
   type Program[A] = Reader[Trello, A]
-  val M = MonadReader[Program, Trello]
 
-  implicit val api = new Api[Program] {
-    def openLists(idBoard: String): Program[Seq[TrelloList]] = M.ask >>= (t => M.point(t.lists))
+  val MR = MonadReader[Program, Trello]
 
-    def openCards(idBoard: String): Program[Seq[Card]] = M.ask >>= (t => M.point(t.cards))
+  val readerApi = new Api[Program] {
+    def openLists(idBoard: String): Program[Seq[TrelloList]] = MR.ask >>= (t => MR.point(t.lists))
 
-    def cardActions(id: String): Program[Seq[CardAction]] = M.ask >>= (t => M.point(t.actions(id)))
+    def openCards(idBoard: String): Program[Seq[Card]] = MR.ask >>= (t => MR.point(t.cards))
+
+    def cardActions(id: String): Program[Seq[CardAction]] = MR.ask >>= (t => MR.point(t.actions(id)))
   }
 
-  val stats = Stats[Program]
+  val stats = new Stats[Program] {
+    val M: Monad[Program] = MR
+    val api: Api[Program] = readerApi
+  }
 
   val idBoard = "5783d18ebed64e477bda0535"
 

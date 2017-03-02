@@ -60,10 +60,3 @@ trait Stats[P[_]] {
       listsByTime + (listName -> summedDuration)
     }
 }
-
-object Stats {
-  def apply[P[_]: Monad: Api] = new Stats[P] {
-    val M: Monad[P] = implicitly
-    val api: Api[P] = implicitly
-  }
-}
