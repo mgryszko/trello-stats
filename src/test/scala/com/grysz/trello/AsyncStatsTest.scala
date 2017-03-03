@@ -8,7 +8,7 @@ import org.scalatest.{FlatSpec, Inspectors, Matchers}
 
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
-import scalaz.Monad
+import scalaz.{Monad, MonadReader, ReaderT}
 
 class AsyncStatsTest extends FlatSpec with Matchers with Inspectors {
   val config = ConfigFactory.load()
@@ -16,17 +16,23 @@ class AsyncStatsTest extends FlatSpec with Matchers with Inspectors {
   import actorSystem.dispatcher
 
   val asyncApi = AsyncApi(config.getString("trello.key"), config.getString("trello.token"))
-  val monadFuture: Monad[Future] = scalaz.std.scalaFuture.futureInstance
-  val stats = new Stats[Future] {
-    val M: Monad[Future] = monadFuture
+  implicit val monadFuture: Monad[Future] = scalaz.std.scalaFuture.futureInstance
+
+  type Program[A] = ReaderT[Future, Env[Future], A]
+
+  object FutureEnv extends Env[Future] {
     val api: Api[Future] = asyncApi
+  }
+
+  val stats = new Stats[Program] {
+    val M = MonadReader[Program, Env[Program]]
   }
 
   val idBoard = "5783d18ebed64e477bda0535"
   val idCard = "57f7b542839dd203cf551704"
 
   "Trello stats" should "get board lists and cards" in {
-    val numCardsByList = result(() => stats.numCardsByList(idBoard))
+    val numCardsByList = result(() => stats.numCardsByList(idBoard).run(FutureEnv))
 
     numCardsByList should not be empty
     forAtLeast(1, numCardsByList.toSeq) { case (name, numCards) =>
@@ -36,7 +42,7 @@ class AsyncStatsTest extends FlatSpec with Matchers with Inspectors {
   }
 
   it should "calculate how much time did a card spent in every list" in {
-    val timesByList = result(() => stats.timeSpentInLists(idCard))
+    val timesByList = result(() => stats.timeSpentInLists(idCard).run(FutureEnv))
 
     timesByList should not be empty
     forAll(timesByList.toSeq) { case (idList, time) =>

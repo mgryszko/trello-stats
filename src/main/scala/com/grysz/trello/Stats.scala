@@ -2,18 +2,22 @@ package com.grysz.trello
 
 import java.time.{Duration, Instant}
 
-import scalaz.Monad
+import scalaz.MonadReader
+
+trait Env[P[_]] {
+  val api: Api[P]
+}
 
 trait Stats[P[_]] {
   import scalaz.syntax.monad._
 
-  implicit val M: Monad[P]
-  val api: Api[P]
+  implicit val M: MonadReader[P, Env[P]]
 
   def numCardsByList(idBoard: String): P[Map[String, Int]] = {
     for {
-      cards <- api.openCards(idBoard)
-      lists <- api.openLists(idBoard)
+      env <- M.ask
+      cards <- env.api.openCards(idBoard)
+      lists <- env.api.openLists(idBoard)
     } yield lists.map(l => (l.name, countCardsOfList(cards, l.id))).toMap
   }
 
@@ -31,7 +35,8 @@ trait Stats[P[_]] {
 
   def timeSpentInLists(idCard: String): P[Map[String, Duration]] = {
     for {
-      actions <- api.cardActions(idCard)
+      env <- M.ask
+      actions <- env.api.cardActions(idCard)
       chronologicalActions <- actions.sortBy(_.date).point
       transitions <- tupled(toTransitions(chronologicalActions)).point
       timesByList <- durationInList(transitions).point
