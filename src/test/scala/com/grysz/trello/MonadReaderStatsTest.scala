@@ -55,7 +55,7 @@ class MonadReaderStatsTest extends FlatSpec with Matchers {
     )
   )
 
-  val expectedListsByTimeSpent = Map(
+  val expectedTimeSpentByList = Map(
     "list1" -> Duration.parse("PT64H37M21.316S"),
     "list2" -> Duration.parse("PT309H38M33.444S"),
     "list3" -> Duration.parse("PT23H52M56.719S"),
@@ -75,7 +75,7 @@ class MonadReaderStatsTest extends FlatSpec with Matchers {
 
     val timesByList = stats.timeSpentInLists("idCard1").run(trello)
 
-    (timesByList - idFinalList) should equal (expectedListsByTimeSpent)
+    (timesByList - idFinalList) should equal (expectedTimeSpentByList)
     timesByList(idFinalList) should be >= Duration.between(timeEnteredLastList, now)
   }
 }
