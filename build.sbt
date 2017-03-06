@@ -10,6 +10,9 @@ libraryDependencies ++= Seq(
   "org.scalaz" %% "scalaz-core" % "7.2.8",
   "com.typesafe.akka" %% "akka-http" % "10.0.0",
   "com.typesafe.akka" %% "akka-http-spray-json" % "10.0.0",
+  "com.github.scopt" %% "scopt" % "3.5.0",
   "org.scalatest" %% "scalatest" % "3.0.1" % "test"
 )
+
+trapExit := false
 
