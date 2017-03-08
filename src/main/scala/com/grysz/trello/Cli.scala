@@ -17,9 +17,10 @@ object CliExecutor {
   implicit private val monadFuture: Monad[Future] = scalaFuture.futureInstance
   private val stats = Stats[Future]
 
-  def timeSpentInLists(idCard: String): Unit = {
-    println(result(() => stats.timeSpentInLists(idCard)))
-  }
+  import Formatter._
+  import scalaz.syntax.show._
+
+  def timeSpentInLists(idCard: String): Unit = println(result(() => stats.timeSpentInLists(idCard)).shows)
 
   private def result[T](asynchOp: () => Future[T]): T = Await.result(asynchOp(), 10 seconds)
 }
