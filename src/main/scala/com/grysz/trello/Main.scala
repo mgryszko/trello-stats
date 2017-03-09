@@ -9,7 +9,7 @@ import scalaz.Monad
 
 object Main {
   abstract class Command
-  case class TimeSpentInLists() extends Command
+  case class TimeSpent() extends Command
   case class NumCards() extends Command
   case class Unknown() extends Command
 
@@ -19,7 +19,7 @@ object Main {
     val parser = new scopt.OptionParser[Config]("trello-stats") {
       help("help").text("prints this usage text")
 
-      cmd("time-in-lists").action((_, c) => c.copy(cmd = TimeSpentInLists())).children(
+      cmd("time-spent").action((_, c) => c.copy(cmd = TimeSpent())).children(
         arg[String]("<idCard>").required().action((idCard, c) => c.copy(idCard = idCard)).text("idCard")
       )
 
@@ -30,7 +30,7 @@ object Main {
 
     parser.parse(args, Config(cmd = Unknown(), idCard = "", idBoard = "")) match {
       case Some(config) => config.cmd match {
-        case TimeSpentInLists() => Cli.timeSpentInLists(config.idCard)
+        case TimeSpent() => Cli.timeSpentInLists(config.idCard)
         case NumCards() => Cli.numCardsByList(config.idBoard)
         case _ =>
       }
