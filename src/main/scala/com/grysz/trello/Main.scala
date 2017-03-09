@@ -8,23 +8,31 @@ import scala.concurrent.duration._
 import scalaz.Monad
 
 object Main {
-  case class Config(idCard: String)
+  abstract class Command
+  case class TimeSpentInLists() extends Command
+  case class Unknown() extends Command
+
+  case class Config(cmd: Command, idCard: String)
 
   def main(args: Array[String]): Unit = {
     val parser = new scopt.OptionParser[Config]("trello-stats") {
       help("help").text("prints this usage text")
 
-      arg[String]("<idCard>").required().action((idCard, c) => c.copy(idCard = idCard)).text("idCard")
+      cmd("time-in-lists").action((_, c) => c.copy(cmd = TimeSpentInLists())).children(
+        arg[String]("<idCard>").required().action((idCard, c) => c.copy(idCard = idCard)).text("idCard")
+      )
     }
 
-    parser.parse(args, Config(idCard = "")) match {
-      case Some(config) => {
-        Cli.timeSpentInLists(config.idCard)
+    parser.parse(args, Config(cmd = Unknown(), idCard = "")) match {
+      case Some(config) => config.cmd match {
+        case TimeSpentInLists() => Cli.timeSpentInLists(config.idCard)
+        case _ =>
       }
 
       case None =>
     }
   }
+
 }
 
 object Cli {
