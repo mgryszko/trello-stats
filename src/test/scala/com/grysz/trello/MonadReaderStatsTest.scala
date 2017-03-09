@@ -25,7 +25,7 @@ class MonadReaderStatsTest extends FlatSpec with Matchers {
 
   val stats = Stats[Program]
 
-  val idBoard = "5783d18ebed64e477bda0535"
+  val idBoard = "idBoard"
 
   val idFinalList = "idList7"
   val timeEnteredLastList = Instant.parse("2016-11-16T08:24:26.593Z")
