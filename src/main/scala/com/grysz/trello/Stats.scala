@@ -44,6 +44,7 @@ trait Stats[P[_]] {
 
   private def toTransition(action: CardAction): Seq[CardTransition] = action match {
     case CreateCardAction(date, idList) => Seq(CardEnteredList(date, idList))
+    case EmailCardAction(date, idList) => Seq(CardEnteredList(date, idList))
     case UpdateListAction(date, idListBefore, idListAfter) => Seq(CardLeftList(date, idListBefore), CardEnteredList(date, idListAfter))
   }
 

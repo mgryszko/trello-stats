@@ -2,11 +2,12 @@ package com.grysz.trello
 
 import java.time.{Duration, Instant}
 
+import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{FlatSpec, Matchers}
 
 import scalaz.{MonadReader, Reader}
 
-class MonadReaderStatsTest extends FlatSpec with Matchers {
+class MonadReaderStatsTest extends FlatSpec with TableDrivenPropertyChecks with Matchers {
 
   case class Trello(lists: Seq[TrelloList], cards: Seq[Card], actions: Map[String, Seq[CardAction]])
 
@@ -24,11 +25,6 @@ class MonadReaderStatsTest extends FlatSpec with Matchers {
   }
 
   val stats = Stats[Program]
-
-  val idBoard = "idBoard"
-
-  val idFinalList = "idList7"
-  val timeEnteredLastList = Instant.parse("2016-11-16T08:24:26.593Z")
 
   val trello = Trello(
     lists = Seq(
@@ -50,32 +46,51 @@ class MonadReaderStatsTest extends FlatSpec with Matchers {
         UpdateListAction(Instant.parse("2016-10-22T14:01:15.128Z"), "list4", "list2"),
         UpdateListAction(Instant.parse("2016-10-28T11:31:29.960Z"), "list2", "list5"),
         UpdateListAction(Instant.parse("2016-11-10T17:53:54.378Z"), "list5", "list6"),
-        UpdateListAction(timeEnteredLastList, "idList6", idFinalList)
+        UpdateListAction(Instant.parse("2016-11-16T08:24:26.593Z"), "list6", "list7")
+      ),
+      "idCard2" -> Seq(
+        EmailCardAction(Instant.parse("2017-01-26T12:21:08.945Z"), "list1"),
+        UpdateListAction(Instant.parse("2017-01-27T21:24:57.669Z"), "list1", "list2"),
+        UpdateListAction(Instant.parse("2017-01-30T08:29:39.406Z"), "list2", "list4"),
+        UpdateListAction(Instant.parse("2017-03-07T14:34:07.329Z"), "list4", "list5")
       )
     )
   )
 
   val expectedTimeSpentByList = Map(
-    "list1" -> Duration.parse("PT64H37M21.316S"),
-    "list2" -> Duration.parse("PT309H38M33.444S"),
-    "list3" -> Duration.parse("PT23H52M56.719S"),
-    "list4" -> Duration.parse("PT102H36M12.341S"),
-    "list5" -> Duration.parse("PT318H22M24.418S"),
-    "list6" -> Duration.parse("PT134H30M32.215S")
+    "idCard1" -> Map(
+      "list1" -> Duration.parse("PT64H37M21.316S"),
+      "list2" -> Duration.parse("PT309H38M33.444S"),
+      "list3" -> Duration.parse("PT23H52M56.719S"),
+      "list4" -> Duration.parse("PT102H36M12.341S"),
+      "list5" -> Duration.parse("PT318H22M24.418S"),
+      "list6" -> Duration.parse("PT134H30M32.215S")
+    ),
+    "idCard2" -> Map(
+      "list1" -> Duration.parse("PT33H3M48.724S"),
+      "list2" -> Duration.parse("PT59H4M41.737S"),
+      "list4" -> Duration.parse("PT870H4M27.923S")
+    )
   )
 
   "Trello stats" should "get board lists and number of cards in each of them" in {
-    val numCardsByList = stats.numCardsByList(idBoard).run(trello)
+    val numCardsByList = stats.numCardsByList("idBoard").run(trello)
 
     numCardsByList should equal (Map("list1" -> 2, "list2" -> 1, "list3" -> 0))
   }
 
   it should "calculate how much time did a card spent in every list" in {
-    val now = Instant.now()
+    forAll(Table(
+      ("idCard", "finalList", "timeEnteredLastList"),
+      ("idCard1", "list7", Instant.parse("2016-11-16T08:24:26.593Z")),
+      ("idCard2", "list5", Instant.parse("2017-03-07T14:34:07.329Z"))
+    )) { (idCard, idFinalList, timeEnteredLastList) =>
+      val now = Instant.now()
 
-    val timesByList = stats.timeSpentInLists("idCard1").run(trello)
+      val timesByList = stats.timeSpentInLists(idCard).run(trello)
 
-    (timesByList - idFinalList) should equal (expectedTimeSpentByList)
-    timesByList(idFinalList) should be >= Duration.between(timeEnteredLastList, now)
+      (timesByList - idFinalList) should equal(expectedTimeSpentByList(idCard))
+      timesByList(idFinalList) should be >= Duration.between(timeEnteredLastList, now)
+    }
   }
 }
