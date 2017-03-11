@@ -53,6 +53,13 @@ class MonadReaderStatsTest extends FlatSpec with TableDrivenPropertyChecks with 
         UpdateListAction(Instant.parse("2017-01-27T21:24:57.669Z"), "list1", "list2"),
         UpdateListAction(Instant.parse("2017-01-30T08:29:39.406Z"), "list2", "list4"),
         UpdateListAction(Instant.parse("2017-03-07T14:34:07.329Z"), "list4", "list5")
+      ),
+      "idCard3" -> Seq(
+        CreateCardAction(Instant.parse("2016-02-02T11:34:48.921Z"), "list1"),
+        UpdateListAction(Instant.parse("2016-08-21T15:49:19.382Z"), "list1", "list4"),
+        UpdateListAction(Instant.parse("2016-10-10T17:11:22.557Z"), "list4", "list5"),
+        UpdateListAction(Instant.parse("2016-10-11T14:45:30.488Z"), "list5", "list7"),
+        UpdateListAction(Instant.parse("2016-11-07T11:57:26.941Z"), "list7", "list8")
       )
     )
   )
@@ -70,6 +77,12 @@ class MonadReaderStatsTest extends FlatSpec with TableDrivenPropertyChecks with 
       "list1" -> Duration.parse("PT33H3M48.724S"),
       "list2" -> Duration.parse("PT59H4M41.737S"),
       "list4" -> Duration.parse("PT870H4M27.923S")
+    ),
+    "idCard3" -> Map(
+      "list1" -> Duration.parse("PT4828H14M30.461S"),
+      "list4" -> Duration.parse("PT1201H22M3.175S"),
+      "list5" -> Duration.parse("PT21H34M7.931S"),
+      "list7" -> Duration.parse("PT645H11M56.453S")
     )
   )
 
@@ -83,7 +96,8 @@ class MonadReaderStatsTest extends FlatSpec with TableDrivenPropertyChecks with 
     forAll(Table(
       ("idCard", "finalList", "timeEnteredLastList"),
       ("idCard1", "list7", Instant.parse("2016-11-16T08:24:26.593Z")),
-      ("idCard2", "list5", Instant.parse("2017-03-07T14:34:07.329Z"))
+      ("idCard2", "list5", Instant.parse("2017-03-07T14:34:07.329Z")),
+      ("idCard3", "list8", Instant.parse("2016-11-07T11:57:26.941Z"))
     )) { (idCard, idFinalList, timeEnteredLastList) =>
       val now = Instant.now()
 
