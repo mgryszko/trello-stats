@@ -10,3 +10,9 @@ object AvgDuration {
     total dividedBy xs.size
   }
 }
+
+object DurationSyntax {
+  implicit class DurationOps(duration: Duration) {
+    def stripMillis: Duration = Duration.ofSeconds(duration.getSeconds)
+  }
+}

@@ -92,6 +92,17 @@ class MonadReaderStatsTest extends FlatSpec with TableDrivenPropertyChecks with 
     )
   )
 
+  val expectedAvgTimeSpentByList = Map(
+    "list1" -> Duration.parse("PT1641H58M33S"),
+    "list2" -> Duration.parse("PT184H21M37S"),
+    "list3" -> Duration.parse("PT23H52M56S"),
+    "list4" -> Duration.parse("PT724H40M54S"),
+    "list5" -> Duration.parse("PT136H27M28S"),
+    "list6" -> Duration.parse("PT134H30M32S"),
+    "list7" -> Duration.parse("PT1692H23M44S"),
+    "list8" -> Duration.parse("PT2952H2M33S")
+  )
+
   "Trello stats" should "get board lists and number of cards in each of them" in {
     val numCardsByList = stats.numCardsByList("idBoard").run(trello)
 
@@ -104,5 +115,13 @@ class MonadReaderStatsTest extends FlatSpec with TableDrivenPropertyChecks with 
 
       timesByList should equal(expectedTimeSpentByList(idCard))
     }
+  }
+
+  it should "calculate average time a card spent in lists" in {
+    val idBoard = "::idBoard::"
+
+    val result = stats.avgTimeSpentInLists(idBoard).run(trello)
+
+    result should equal(expectedAvgTimeSpentByList)
   }
 }

@@ -2,16 +2,23 @@ package com.grysz.trello
 
 import java.time.{Clock, Duration, Instant}
 
-import scalaz.Applicative
+import scalaz.Monad
 
 trait Stats[P[_]] {
-  import scalaz.syntax.applicative._
+  import com.grysz.trello.DurationSyntax._
 
-  implicit val A: Applicative[P]
+  import scalaz.std.list._
+  import scalaz.std.map._
+  import scalaz.syntax.monad._
+  import scalaz.syntax.semigroup._
+
+  implicit val A: Monad[P]
   val api: Api[P]
   val clock: Clock
 
   def numCardsByList(idBoard: String): P[Map[String, Int]] = {
+    import scalaz.syntax.applicative._
+
     (api.openCards(idBoard) |@| api.openLists(idBoard))((cards, lists) => {
       lists.map(l => (l.name, countCardsOfList(cards, l.id))).toMap
     })
@@ -27,6 +34,20 @@ trait Stats[P[_]] {
   case class CardLeftList(date: Instant, listName: String) extends CardTransition
   case class CardStillInList(listName: String) extends CardTransition {
     val date: Instant = clock.instant()
+  }
+
+  def avgTimeSpentInLists(idBoard: String): P[Map[String, Duration]] = {
+    import scalaz.syntax.traverse._
+
+    api.openCards(idBoard) >>= { cards =>
+      cards.map(_.id).point[P] >>= { idCards =>
+        val timesOfAllCards: P[List[Map[String, Duration]]] = idCards.map(timeSpentInLists).toList.sequence
+        timesOfAllCards >>= { times =>
+          val accumulatedTimesByList = times.map(_.mapValues(List(_))).fold(Map.empty)(_ |+| _)
+          AvgDuration.avg(accumulatedTimesByList).mapValues(_.stripMillis).point[P]
+        }
+      }
+    }
   }
 
   def timeSpentInLists(idCard: String): P[Map[String, Duration]] = {
@@ -63,8 +84,8 @@ trait Stats[P[_]] {
 }
 
 object Stats {
-  def apply[P[_]: Applicative: Api](implicit clk: Clock) = new Stats[P] {
-    val A: Applicative[P] = implicitly
+  def apply[P[_]: Monad: Api](implicit clk: Clock) = new Stats[P] {
+    val A: Monad[P] = implicitly
     val api: Api[P] = implicitly
     val clock: Clock = clk
   }

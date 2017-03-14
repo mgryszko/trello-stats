@@ -5,6 +5,7 @@ import java.time.Duration
 import org.scalatest.{FlatSpec, Matchers}
 
 class AvgDurationTest extends FlatSpec with Matchers {
+  import com.grysz.trello.DurationSyntax._
 
   val timesSpentByList = Map(
     "list1" -> List(Duration.parse("PT64H37M21.316S"), Duration.parse("PT33H3M48.724S"), Duration.parse("PT4828H14M30.461S")),
@@ -27,10 +28,6 @@ class AvgDurationTest extends FlatSpec with Matchers {
   )
 
   it should "calculate average duration" in {
-    AvgDuration.avg(timesSpentByList).mapValues(DurationOps.stripNano(_)) should equal(expectedAvgTimeSpentByList)
-  }
-
-  object DurationOps {
-    def stripNano(d: Duration) = Duration.ofSeconds(d.getSeconds)
+    AvgDuration.avg(timesSpentByList).mapValues(_.stripMillis) should equal(expectedAvgTimeSpentByList)
   }
 }
