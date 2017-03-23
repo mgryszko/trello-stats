@@ -1,6 +1,6 @@
 package com.grysz.trello
 
-import java.time.Duration
+import java.time.{Clock, Duration}
 
 import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
@@ -18,6 +18,7 @@ class AsyncStatsTest extends FlatSpec with Matchers with Inspectors {
   implicit val api = AsyncApi(config.getString("trello.key"), config.getString("trello.token"))
   import scalaz.std.scalaFuture
   implicit val monadFuture: Monad[Future] = scalaFuture.futureInstance
+  implicit val clock: Clock = Clock.systemDefaultZone
   val stats = Stats[Future]
 
   val idBoard = "5783d18ebed64e477bda0535"

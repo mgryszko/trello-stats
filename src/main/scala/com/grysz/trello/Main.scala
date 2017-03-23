@@ -1,5 +1,7 @@
 package com.grysz.trello
 
+import java.time.Clock
+
 import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
 
@@ -50,6 +52,7 @@ object Cli {
 
   import scalaz.std.scalaFuture
   implicit private val monadFuture: Monad[Future] = scalaFuture.futureInstance
+  implicit private val clock = Clock.systemDefaultZone
   private val stats = Stats[Future]
 
   import Formatter._

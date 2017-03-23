@@ -1,6 +1,6 @@
 package com.grysz.trello
 
-import java.time.{Duration, Instant}
+import java.time.{Clock, Duration, Instant, ZoneId}
 
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{FlatSpec, Matchers}
@@ -23,6 +23,8 @@ class MonadReaderStatsTest extends FlatSpec with TableDrivenPropertyChecks with 
 
     def cardActions(id: String): Program[Seq[CardAction]] = M.ask >>= (t => M.point(t.actions(id)))
   }
+
+  implicit val clock: Clock = Clock.fixed(Instant.parse("2017-03-10T12:00:00Z"), ZoneId.systemDefault)
 
   val stats = Stats[Program]
 
@@ -71,18 +73,22 @@ class MonadReaderStatsTest extends FlatSpec with TableDrivenPropertyChecks with 
       "list3" -> Duration.parse("PT23H52M56.719S"),
       "list4" -> Duration.parse("PT102H36M12.341S"),
       "list5" -> Duration.parse("PT318H22M24.418S"),
-      "list6" -> Duration.parse("PT134H30M32.215S")
+      "list6" -> Duration.parse("PT134H30M32.215S"),
+      "list7" -> Duration.parse("PT2739H35M33.407S")
+
     ),
     "idCard2" -> Map(
       "list1" -> Duration.parse("PT33H3M48.724S"),
       "list2" -> Duration.parse("PT59H4M41.737S"),
-      "list4" -> Duration.parse("PT870H4M27.923S")
+      "list4" -> Duration.parse("PT870H4M27.923S"),
+      "list5" -> Duration.parse("PT69H25M52.671S")
     ),
     "idCard3" -> Map(
       "list1" -> Duration.parse("PT4828H14M30.461S"),
       "list4" -> Duration.parse("PT1201H22M3.175S"),
       "list5" -> Duration.parse("PT21H34M7.931S"),
-      "list7" -> Duration.parse("PT645H11M56.453S")
+      "list7" -> Duration.parse("PT645H11M56.453S"),
+      "list8" -> Duration.parse("PT2952H2M33.059S")
     )
   )
 
@@ -93,18 +99,10 @@ class MonadReaderStatsTest extends FlatSpec with TableDrivenPropertyChecks with 
   }
 
   it should "calculate how much time did a card spent in every list" in {
-    forAll(Table(
-      ("idCard", "finalList", "timeEnteredLastList"),
-      ("idCard1", "list7", Instant.parse("2016-11-16T08:24:26.593Z")),
-      ("idCard2", "list5", Instant.parse("2017-03-07T14:34:07.329Z")),
-      ("idCard3", "list8", Instant.parse("2016-11-07T11:57:26.941Z"))
-    )) { (idCard, idFinalList, timeEnteredLastList) =>
-      val now = Instant.now()
-
+    forAll(Table("idCard", "idCard1", "idCard2", "idCard3")) { (idCard) =>
       val timesByList = stats.timeSpentInLists(idCard).run(trello)
 
-      (timesByList - idFinalList) should equal(expectedTimeSpentByList(idCard))
-      timesByList(idFinalList) should be >= Duration.between(timeEnteredLastList, now)
+      timesByList should equal(expectedTimeSpentByList(idCard))
     }
   }
 }

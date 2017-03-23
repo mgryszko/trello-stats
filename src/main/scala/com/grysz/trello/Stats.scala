@@ -1,6 +1,6 @@
 package com.grysz.trello
 
-import java.time.{Duration, Instant}
+import java.time.{Clock, Duration, Instant}
 
 import scalaz.Applicative
 
@@ -9,6 +9,7 @@ trait Stats[P[_]] {
 
   implicit val A: Applicative[P]
   val api: Api[P]
+  val clock: Clock
 
   def numCardsByList(idBoard: String): P[Map[String, Int]] = {
     (api.openCards(idBoard) |@| api.openLists(idBoard))((cards, lists) => {
@@ -25,7 +26,7 @@ trait Stats[P[_]] {
   case class CardEnteredList(date: Instant, listName: String) extends CardTransition
   case class CardLeftList(date: Instant, listName: String) extends CardTransition
   case class CardStillInList(listName: String) extends CardTransition {
-    val date: Instant = Instant.now()
+    val date: Instant = clock.instant()
   }
 
   def timeSpentInLists(idCard: String): P[Map[String, Duration]] = {
@@ -62,8 +63,9 @@ trait Stats[P[_]] {
 }
 
 object Stats {
-  def apply[P[_]: Applicative: Api] = new Stats[P] {
+  def apply[P[_]: Applicative: Api](implicit clk: Clock) = new Stats[P] {
     val A: Applicative[P] = implicitly
     val api: Api[P] = implicitly
+    val clock: Clock = clk
   }
 }
