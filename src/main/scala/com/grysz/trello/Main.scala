@@ -12,6 +12,7 @@ import scalaz.Monad
 object Main {
   abstract class Command
   case class TimeSpent() extends Command
+  case class AvgTimeSpent() extends Command
   case class NumCards() extends Command
   case class Unknown() extends Command
 
@@ -25,6 +26,10 @@ object Main {
         arg[String]("<idCard>").required().action((idCard, c) => c.copy(idCard = idCard)).text("idCard")
       )
 
+      cmd("avg-time-spent").action((_, c) => c.copy(cmd = AvgTimeSpent())).children(
+        arg[String]("<idBoard>").required().action((idBoard, c) => c.copy(idBoard = idBoard)).text("idBoard")
+      )
+
       cmd("num-cards").action((_, c) => c.copy(cmd = NumCards())).children(
         arg[String]("<idBoard>").required().action((idBoard, c) => c.copy(idBoard = idBoard)).text("idBoard")
       )
@@ -33,6 +38,7 @@ object Main {
     parser.parse(args, Config(cmd = Unknown(), idCard = "", idBoard = "")) match {
       case Some(config) => config.cmd match {
         case TimeSpent() => Cli.timeSpentInLists(config.idCard)
+        case AvgTimeSpent() => Cli.avgTimeSpentInLists(config.idBoard)
         case NumCards() => Cli.numCardsByList(config.idBoard)
         case _ =>
       }
@@ -59,6 +65,8 @@ object Cli {
   import scalaz.syntax.show._
 
   def timeSpentInLists(idCard: String): Unit = println(result(() => stats.timeSpentInLists(idCard)).shows)
+
+  def avgTimeSpentInLists(idBoard: String): Unit = println(result(() => stats.avgTimeSpentInLists(idBoard)).shows)
 
   def numCardsByList(idBoard: String): Unit = println(result(() => stats.numCardsByList(idBoard)).shows)
 
