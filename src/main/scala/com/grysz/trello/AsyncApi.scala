@@ -86,8 +86,8 @@ class AsyncApi(key: String, token: String)(implicit actorSystem: ActorSystem, ex
     request[Seq[Card]](s"/1/boards/$idBoard/cards/open")
   }
 
-  def cardActions(id: String): Future[Seq[CardAction]] = {
-    request[Seq[CardAction]](s"/1/cards/$id/actions",
+  def cardActions(idCard: String): Future[Seq[CardAction]] = {
+    request[Seq[CardAction]](s"/1/cards/$idCard/actions",
       Map("filter" -> "emailCard,createCard,updateCard:idList", "fields" -> "type,date,data"))
   }
 
