@@ -34,7 +34,7 @@ class AsyncStatsTest extends FlatSpec with Matchers with Inspectors {
     }
   }
 
-  it should "calculate how much time did a card spent in every list" in {
+  it should "calculate how much time spent a card in every list" in {
     val timesByList = result(() => stats.timeSpentInLists(idCard))
 
     timesByList should not be empty
