@@ -40,6 +40,7 @@ trait JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
       cardType match {
         case JsString("createCard") => readCreateCardAction(fields)
         case JsString("updateCard") => readUpdateCardAction(fields)
+        case JsString("emailCard") => readEmailCardAction(fields)
         case _ => deserializationError(s"action $cardType not supported")
       }
     }
@@ -59,11 +60,17 @@ trait JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
       )
     }
 
+    private def readEmailCardAction(fields: Map[String, JsValue]) = {
+      EmailCardAction(
+        date = date(fields),
+        listName = listName(data(fields)("list"))
+      )
+    }
+    
     private def date(fields: Map[String, JsValue]) = fields("date").convertTo[Instant]
     private def data(fields: Map[String, JsValue]) = fields("data").asJsObject().fields
     private def listName(fields: JsValue) = fields.asJsObject().fields("name").toString()
   }
-
 }
 
 object AsyncApi {
