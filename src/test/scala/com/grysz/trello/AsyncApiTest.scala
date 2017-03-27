@@ -10,6 +10,9 @@ import scala.concurrent.{Await, Future}
 import scala.reflect.ClassTag
 
 class AsyncApiTest extends FlatSpec with Matchers with Inspectors {
+  import com.grysz.trello.CardActionMatchers._
+  import scalaz.syntax.id._
+
   val config = ConfigFactory.load()
   implicit private val actorSystem = ActorSystem("TrelloApiIntegrationTests", config)
   import actorSystem.dispatcher
@@ -30,27 +33,29 @@ class AsyncApiTest extends FlatSpec with Matchers with Inspectors {
     cards should not be empty
   }
 
-  import CardActionMatchers._
-
   it should "get created card actions" in {
-    val actions = result(() => api.cardActions(idCreatedCard)).sortBy(_.date)
+    val actions = cardActions(idCreatedCard)
     actions should not be empty
     actions should startWithCreateCard
-    forAll(actions.tail) { action =>
-      action shouldBe a [UpdateListAction]
-    }
+    restShouldBeUpdateList(actions)
   }
 
   it should "get emailed card actions" in {
-    val actions = result(() => api.cardActions(idEmailedCard)).sortBy(_.date)
+    val actions = cardActions(idEmailedCard)
     actions should not be empty
     actions should startWithEmailCard
-    forAll(actions.tail) { action =>
-      action shouldBe a [UpdateListAction]
-    }
+    restShouldBeUpdateList(actions)
   }
 
   def result[T](asynchOp: () => Future[T]): T = Await.result(asynchOp(), 10 seconds)
+
+  def cardActions(idCard: String) = result(() => api.cardActions(idCard)) |> sortByDate
+
+  def sortByDate(actions: Seq[CardAction]) = actions.sortBy(_.date)
+
+  def restShouldBeUpdateList(actions: Seq[CardAction]) = forAll(actions.tail) { action =>
+    action should beUpdateList
+  }
 }
 
 object CardActionMatchers {
@@ -66,10 +71,23 @@ object CardActionMatchers {
     }
   }
 
+  class CardActionIsAMatcher(expected: ClassTag[_]) extends Matcher[CardAction] {
+    def apply(left: CardAction) = {
+      val expectedClass = expected.runtimeClass
+      MatchResult(
+        left.getClass.isAssignableFrom(expectedClass),
+        s"""Action $left is not $expectedClass""",
+        s"""Action $left is $expectedClass"""
+      )
+    }
+  }
+
   import scala.reflect._
 
   def startWithCreateCard = new StartWithCardActionMatcher(expected = classTag[CreateCardAction])
 
   def startWithEmailCard = new StartWithCardActionMatcher(expected = classTag[EmailCardAction])
+
+  def beUpdateList = new CardActionIsAMatcher(expected = classTag[UpdateListAction])
 }
 
