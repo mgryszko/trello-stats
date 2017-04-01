@@ -22,6 +22,7 @@ class AsyncApiTest extends FlatSpec with Matchers with Inspectors {
   val idBoard = "5783d18ebed64e477bda0535"
   val idCreatedCard = "57f7b542839dd203cf551704"
   val idEmailedCard = "Hd6MxRB6"
+  val idCardFromInaccessibleList = "56b094581dde932dc67e9b17"
 
   "Trello API" should "get board open lists" in {
     val lists = result(() => api.openLists(idBoard))
@@ -45,6 +46,11 @@ class AsyncApiTest extends FlatSpec with Matchers with Inspectors {
     actions should not be empty
     actions should startWithEmailCard
     restShouldBeUpdateList(actions)
+  }
+
+  it should "get card actions of a card created in an inaccessible list" in {
+    val actions = cardActions(idCardFromInaccessibleList)
+    actions should not be empty
   }
 
   def result[T](asynchOp: () => Future[T]): T = Await.result(asynchOp(), 10 seconds)

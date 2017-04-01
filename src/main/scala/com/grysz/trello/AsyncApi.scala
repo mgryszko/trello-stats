@@ -60,16 +60,17 @@ trait JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
       )
     }
 
-    private def readEmailCardAction(fields: Map[String, JsValue]) = {
+    private def readEmailCardAction(fields: Map[String, JsValue]) =
       EmailCardAction(
         date = date(fields),
         listName = listName(data(fields)("list"))
       )
-    }
-    
+
     private def date(fields: Map[String, JsValue]) = fields("date").convertTo[Instant]
+
     private def data(fields: Map[String, JsValue]) = fields("data").asJsObject().fields
-    private def listName(fields: JsValue) = fields.asJsObject().fields("name").toString()
+
+    private def listName(fields: JsValue) = fields.asJsObject().fields.getOrElse("name", "").toString
   }
 }
 
