@@ -46,7 +46,6 @@ object Main {
       case None =>
     }
   }
-
 }
 
 object Cli {
@@ -70,6 +69,8 @@ object Cli {
 
   def numCardsByList(idBoard: String): Unit = println(result(() => stats.numCardsByList(idBoard)).shows)
 
-  private def result[T](asynchOp: () => Future[T]): T = Await.result(asynchOp(), 10 seconds)
+  private val timeout = 10 seconds
+
+  private def result[T](asynchOp: () => Future[T]): T = Await.result(asynchOp(), timeout)
 }
 
