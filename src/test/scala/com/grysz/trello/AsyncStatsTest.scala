@@ -28,7 +28,7 @@ class AsyncStatsTest extends FlatSpec with Matchers with Inspectors {
     val numCardsByList = result(() => stats.numCardsByList(idBoard))
 
     numCardsByList should not be empty
-    forAtLeast(1, numCardsByList.toSeq) { case (name, numCards) =>
+    forAtLeast(1, numCardsByList) { case (name, numCards) =>
       name should not be empty
       numCards should be >= 1
     }
@@ -38,7 +38,7 @@ class AsyncStatsTest extends FlatSpec with Matchers with Inspectors {
     val timesByList = result(() => stats.timeSpentInLists(idCard))
 
     timesByList should not be empty
-    forAll(timesByList.toSeq) { case (idList, time) =>
+    forAll(timesByList) { case (idList, time) =>
       idList should not be empty
       time should be > Duration.ZERO
     }

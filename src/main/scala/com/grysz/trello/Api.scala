@@ -15,7 +15,7 @@ case class CreateCardAction(date: Instant, listName: String) extends CardAction
 case class UpdateListAction(date: Instant, idListBefore: String, idListAfter: String) extends CardAction
 
 trait Api[P[_]] {
-  def openLists(idBoard: String): P[Seq[TrelloList]]
-  def openCards(idBoard: String): P[Seq[Card]]
-  def cardActions(idCard: String): P[Seq[CardAction]]
+  def openLists(idBoard: String): P[List[TrelloList]]
+  def openCards(idBoard: String): P[List[Card]]
+  def cardActions(idCard: String): P[List[CardAction]]
 }

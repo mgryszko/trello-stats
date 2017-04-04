@@ -57,16 +57,16 @@ class AsyncApiTest extends FlatSpec with Matchers with Inspectors {
 
   def cardActions(idCard: String) = result(() => api.cardActions(idCard)) |> sortByDate
 
-  def sortByDate(actions: Seq[CardAction]) = actions.sortBy(_.date)
+  def sortByDate(actions: List[CardAction]) = actions.sortBy(_.date)
 
-  def restShouldBeUpdateList(actions: Seq[CardAction]) = forAll(actions.tail) { action =>
+  def restShouldBeUpdateList(actions: List[CardAction]) = forAll(actions.tail) { action =>
     action should beUpdateList
   }
 }
 
 object CardActionMatchers {
-  class StartWithCardActionMatcher(expected: ClassTag[_]) extends Matcher[Seq[CardAction]] {
-    def apply(left: Seq[CardAction]) = {
+  class StartWithCardActionMatcher(expected: ClassTag[_]) extends Matcher[List[CardAction]] {
+    def apply(left: List[CardAction]) = {
       val first = left.head
       val expectedClass = expected.runtimeClass
       MatchResult(

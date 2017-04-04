@@ -24,7 +24,7 @@ trait Stats[P[_]] {
     })
   }
 
-  private def countCardsOfList(cards: Seq[Card], idList: String) = cards.count(_.idList == idList)
+  private def countCardsOfList(cards: List[Card], idList: String) = cards.count(_.idList == idList)
 
   sealed abstract class CardTransition {
     val date: Instant
@@ -41,7 +41,7 @@ trait Stats[P[_]] {
 
     api.openCards(idBoard) >>= { cards =>
       cards.map(_.id).point[P] >>= { idCards =>
-        val timesOfAllCards: P[List[Map[String, Duration]]] = idCards.map(timeSpentInLists).toList.sequence
+        val timesOfAllCards: P[List[Map[String, Duration]]] = idCards.map(timeSpentInLists).sequence
         timesOfAllCards >>= { times =>
           val accumulatedTimesByList = times.map(_.mapValues(List(_))).fold(Map.empty)(_ |+| _)
           AvgDuration.avg(accumulatedTimesByList).mapValues(_.stripMillis).point[P]
@@ -59,24 +59,24 @@ trait Stats[P[_]] {
       .map(toMap)
   }
 
-  private def toTransitions(actions: Seq[CardAction]): Seq[CardTransition] = {
+  private def toTransitions(actions: List[CardAction]): List[CardTransition] = {
     val transitions = actions.flatMap(toTransition)
-    transitions ++ Seq(CardStillInList(transitions.last.listName))
+    transitions ++ List(CardStillInList(transitions.last.listName))
   }
 
-  private def toTransition(action: CardAction): Seq[CardTransition] = action match {
-    case CreateCardAction(date, idList) => Seq(CardEnteredList(date, idList))
-    case EmailCardAction(date, idList) => Seq(CardEnteredList(date, idList))
-    case UpdateListAction(date, idListBefore, idListAfter) => Seq(CardLeftList(date, idListBefore), CardEnteredList(date, idListAfter))
+  private def toTransition(action: CardAction): List[CardTransition] = action match {
+    case CreateCardAction(date, idList) => List(CardEnteredList(date, idList))
+    case EmailCardAction(date, idList) => List(CardEnteredList(date, idList))
+    case UpdateListAction(date, idListBefore, idListAfter) => List(CardLeftList(date, idListBefore), CardEnteredList(date, idListAfter))
   }
 
-  private def tupled[A](xs: Iterable[A]): Seq[(A, A)] = xs.grouped(2).map { x => (x.head, x.tail.head) }.toSeq
+  private def tupled[A](xs: Iterable[A]): List[(A, A)] = xs.grouped(2).map { x => (x.head, x.tail.head) }.toList
 
-  private def durationInList(transitions: Seq[(CardTransition, CardTransition)]) = transitions.map {
+  private def durationInList(transitions: List[(CardTransition, CardTransition)]) = transitions.map {
     case (start, end) => (start.listName, Duration.between(start.date, end.date))
   }
 
-  private def toMap(transitions: Seq[(String, Duration)]): Map[String, Duration] =
+  private def toMap(transitions: List[(String, Duration)]): Map[String, Duration] =
     transitions.foldLeft(Map.empty[String, Duration]) { case (listsByTime, (listName, duration)) =>
       val summedDuration = listsByTime.get(listName).fold(duration)(_.plus(duration))
       listsByTime + (listName -> summedDuration)

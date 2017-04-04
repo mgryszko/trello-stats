@@ -9,7 +9,7 @@ import scalaz.{MonadReader, Reader}
 
 class MonadReaderStatsTest extends FlatSpec with TableDrivenPropertyChecks with Matchers {
 
-  case class Trello(lists: Seq[TrelloList], cards: Seq[Card], actions: Map[String, Seq[CardAction]])
+  case class Trello(lists: List[TrelloList], cards: List[Card], actions: Map[String, List[CardAction]])
 
   import scalaz.syntax.monad._
 
@@ -17,11 +17,11 @@ class MonadReaderStatsTest extends FlatSpec with TableDrivenPropertyChecks with 
   val M = MonadReader[Program, Trello]
 
   implicit val api = new Api[Program] {
-    def openLists(idBoard: String): Program[Seq[TrelloList]] = M.ask >>= (t => M.point(t.lists))
+    def openLists(idBoard: String): Program[List[TrelloList]] = M.ask >>= (t => M.point(t.lists))
 
-    def openCards(idBoard: String): Program[Seq[Card]] = M.ask >>= (t => M.point(t.cards))
+    def openCards(idBoard: String): Program[List[Card]] = M.ask >>= (t => M.point(t.cards))
 
-    def cardActions(id: String): Program[Seq[CardAction]] = M.ask >>= (t => M.point(t.actions(id)))
+    def cardActions(id: String): Program[List[CardAction]] = M.ask >>= (t => M.point(t.actions(id)))
   }
 
   implicit val clock: Clock = Clock.fixed(Instant.parse("2017-03-10T12:00:00Z"), ZoneId.systemDefault)
@@ -29,18 +29,18 @@ class MonadReaderStatsTest extends FlatSpec with TableDrivenPropertyChecks with 
   val stats = Stats[Program]
 
   val trello = Trello(
-    lists = Seq(
+    lists = List(
       TrelloList("idList1", "list1"),
       TrelloList("idList2", "list2"),
       TrelloList("idList3", "list3")
     ),
-    cards = Seq(
+    cards = List(
       Card("idCard1", "card1", "idList1"),
       Card("idCard2", "card2", "idList1"),
       Card("idCard3", "card3", "idList2")
     ),
     actions = Map(
-      "idCard1" -> Seq(
+      "idCard1" -> List(
         CreateCardAction(Instant.parse("2016-10-07T14:46:26.140Z"), "list1"),
         UpdateListAction(Instant.parse("2016-10-10T07:23:47.456Z"), "list1", "list2"),
         UpdateListAction(Instant.parse("2016-10-17T07:32:06.068Z"), "list2", "list3"),
@@ -50,13 +50,13 @@ class MonadReaderStatsTest extends FlatSpec with TableDrivenPropertyChecks with 
         UpdateListAction(Instant.parse("2016-11-10T17:53:54.378Z"), "list5", "list6"),
         UpdateListAction(Instant.parse("2016-11-16T08:24:26.593Z"), "list6", "list7")
       ),
-      "idCard2" -> Seq(
+      "idCard2" -> List(
         EmailCardAction(Instant.parse("2017-01-26T12:21:08.945Z"), "list1"),
         UpdateListAction(Instant.parse("2017-01-27T21:24:57.669Z"), "list1", "list2"),
         UpdateListAction(Instant.parse("2017-01-30T08:29:39.406Z"), "list2", "list4"),
         UpdateListAction(Instant.parse("2017-03-07T14:34:07.329Z"), "list4", "list5")
       ),
-      "idCard3" -> Seq(
+      "idCard3" -> List(
         CreateCardAction(Instant.parse("2016-02-02T11:34:48.921Z"), "list1"),
         UpdateListAction(Instant.parse("2016-08-21T15:49:19.382Z"), "list1", "list4"),
         UpdateListAction(Instant.parse("2016-10-10T17:11:22.557Z"), "list4", "list5"),

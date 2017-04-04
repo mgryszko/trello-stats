@@ -29,6 +29,6 @@ class FormatterTest extends FlatSpec with Matchers {
   it should "format a map" in {
     Map[String, String]().shows should equal("")
     Map("key1" -> "value1").shows should equal("key1: value1")
-    Map("key1" -> "value1", "key2" -> "value2").shows should equal(Seq("key1: value1", System.lineSeparator, "key2: value2").mkString)
+    Map("key1" -> "value1", "key2" -> "value2").shows should equal(List("key1: value1", System.lineSeparator, "key2: value2").mkString)
   }
 }

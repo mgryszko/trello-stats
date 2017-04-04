@@ -92,16 +92,16 @@ class AsyncApi(key: String, token: String)(implicit actorSystem: ActorSystem, ex
   private val authParams = Map("key" -> key, "token" -> token)
   private implicit val actorMaterializer = ActorMaterializer()
 
-  def openLists(idBoard: String): Future[Seq[TrelloList]] = {
-    request[Seq[TrelloList]](s"/1/boards/$idBoard/lists/open")
+  def openLists(idBoard: String): Future[List[TrelloList]] = {
+    request[List[TrelloList]](s"/1/boards/$idBoard/lists/open")
   }
 
-  def openCards(idBoard: String): Future[Seq[Card]] = {
-    request[Seq[Card]](s"/1/boards/$idBoard/cards/open")
+  def openCards(idBoard: String): Future[List[Card]] = {
+    request[List[Card]](s"/1/boards/$idBoard/cards/open")
   }
 
-  def cardActions(idCard: String): Future[Seq[CardAction]] = {
-    request[Seq[CardAction]](s"/1/cards/$idCard/actions",
+  def cardActions(idCard: String): Future[List[CardAction]] = {
+    request[List[CardAction]](s"/1/cards/$idCard/actions",
       Map("filter" -> "emailCard,createCard,updateCard:idList", "fields" -> "type,date,data"))
   }
 
