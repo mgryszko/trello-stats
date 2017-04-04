@@ -3,22 +3,27 @@ package com.grysz.trello
 import java.time.Instant
 import java.time.format.DateTimeParseException
 
+import akka.Done
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.StatusCodes.OK
 import akka.http.scaladsl.model.Uri.Query
-import akka.http.scaladsl.model.{HttpRequest, ResponseEntity, Uri}
+import akka.http.scaladsl.model.{HttpRequest, HttpResponse, ResponseEntity, Uri}
 import akka.http.scaladsl.unmarshalling.{Unmarshal, Unmarshaller}
-import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.Sink
+import akka.stream._
+import akka.stream.scaladsl.{GraphDSL, RunnableGraph, Sink, Source, ZipWith}
 import spray.json._
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.util.{Failure, Success, Try}
 
 trait JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
+
   implicit object InstantJsonFormat extends JsonFormat[Instant] {
     def write(instant: Instant) = JsString(instant.toString)
+
     def read(json: JsValue): Instant = json match {
       case JsString(s) => try {
         Instant.parse(s)
@@ -28,6 +33,7 @@ trait JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
       case _ => deserializationError("string with ISO 8601 date/item expected")
     }
   }
+
   implicit val listProtocol: RootJsonFormat[TrelloList] = jsonFormat2(TrelloList)
   implicit val cardProtocol: RootJsonFormat[Card] = jsonFormat3(Card)
 
@@ -101,7 +107,7 @@ class AsyncApi(key: String, token: String)(implicit actorSystem: ActorSystem, ex
 
   private def request[T](path: String, params: Map[String, String] = Map())
                         (implicit unmarshaller: Unmarshaller[ResponseEntity, T]): Future[T] = {
-    Http().singleRequest(HttpRequest(uri = uri(path, params))).flatMap(resp => {
+    queueRequest(HttpRequest(uri = uri(path, params))).flatMap(resp => {
       resp.status match {
         case OK => Unmarshal(resp.entity).to[T]
         case _ =>
@@ -110,6 +116,44 @@ class AsyncApi(key: String, token: String)(implicit actorSystem: ActorSystem, ex
           Future.failed(new RuntimeException(s"Request failed. Status: $status. Full response: $resp"))
       }
     })
+  }
+
+  private val poolFlow = Http().superPool[Promise[HttpResponse]]()
+  private val queue = Source.queue[(HttpRequest, Promise[HttpResponse])](10000, OverflowStrategy.dropNew)
+  private val tick = Source.tick(FiniteDuration(0, "s"), FiniteDuration(125, "ms"), ())
+  private val sink: Sink[(Try[HttpResponse], Promise[HttpResponse]), Future[Done]] = Sink.foreach({
+    case ((Success(resp), p)) => p.success(resp)
+    case ((Failure(e), p)) => p.failure(e)
+  })
+
+  private val graph = GraphDSL.create(queue) { implicit builder => queue =>
+    val queueOut = queue.out
+    val tickOut = builder.add(tick).out
+    val queueAndTickJunction: FanInShape2[(HttpRequest, Promise[HttpResponse]), Unit, (HttpRequest, Promise[HttpResponse])] =
+      builder.add(ZipWith((first, _) => first))
+    val poolShape = builder.add(poolFlow)
+    val sinkIn = builder.add(sink).in
+
+    import GraphDSL.Implicits._
+
+    queueOut ~> queueAndTickJunction.in0
+    tickOut ~> queueAndTickJunction.in1
+    queueAndTickJunction.out ~> poolShape ~> sinkIn
+
+    ClosedShape
+  }
+
+  private val queueStream = RunnableGraph.fromGraph(graph).run()
+
+  private def queueRequest(request: HttpRequest): Future[HttpResponse] = {
+    val responsePromise = Promise[HttpResponse]()
+    queueStream.offer(request -> responsePromise).flatMap {
+      case QueueOfferResult.Enqueued => responsePromise.future
+      case QueueOfferResult.Dropped => Future.failed(new RuntimeException("Queue overflowed"))
+      case QueueOfferResult.Failure(e) => Future.failed(e)
+      case QueueOfferResult.QueueClosed =>
+        Future.failed(new RuntimeException("Queue was closed (pool shut down) while running the request"))
+    }
   }
 
   private def uri(path: String, params: Map[String, String]) = endpoint
