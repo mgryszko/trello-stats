@@ -107,7 +107,7 @@ class AsyncApi(key: String, token: String)(implicit actorSystem: ActorSystem, ex
         case _ =>
           val status = resp.status
           discardEntity(resp.entity)
-          Future.failed(new RuntimeException(s"Request failed with status ${status.reason}"))
+          Future.failed(new RuntimeException(s"Request failed. Status: $status. Full response: $resp"))
       }
     })
   }
