@@ -14,5 +14,7 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "3.0.1" % "test"
 )
 
+scalacOptions ++= Seq("-feature", "-language:postfixOps", "-language:higherKinds")
+
 trapExit := false
 
