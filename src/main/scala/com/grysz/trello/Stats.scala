@@ -2,9 +2,31 @@ package com.grysz.trello
 
 import java.time.{Clock, Duration, Instant}
 
-import scalaz.Monad
+import scalaz.{Applicative, Monad}
 
-trait Stats[P[_]] {
+trait NumCardsInLists[P[_]] {
+  import scalaz.syntax.applicative._
+
+  implicit val A: Applicative[P]
+  val api: Api[P]
+
+  def numCardsInLists(idBoard: String): P[Map[String, Int]] = {
+    (api.openCards(idBoard) |@| api.openLists(idBoard))((cards, lists) => {
+      lists.map(l => (l.name, countListCards(cards, l.id))).toMap
+    })
+  }
+
+  private def countListCards(cards: List[Card], idList: String) = cards.count(_.idList == idList)
+}
+
+object NumCardsInLists {
+  def apply[P[_]: Applicative: Api] = new NumCardsInLists[P] {
+    val A: Applicative[P] = implicitly
+    val api: Api[P] = implicitly
+  }
+}
+
+trait AvgTimeSpent[P[_]] {
   import com.grysz.trello.DurationSyntax._
 
   import scalaz.std.list._
@@ -12,19 +34,9 @@ trait Stats[P[_]] {
   import scalaz.syntax.monad._
   import scalaz.syntax.semigroup._
 
-  implicit val A: Monad[P]
+  implicit val M: Monad[P]
   val api: Api[P]
   val clock: Clock
-
-  def numCardsInLists(idBoard: String): P[Map[String, Int]] = {
-    import scalaz.syntax.applicative._
-
-    (api.openCards(idBoard) |@| api.openLists(idBoard))((cards, lists) => {
-      lists.map(l => (l.name, countListCards(cards, l.id))).toMap
-    })
-  }
-
-  private def countListCards(cards: List[Card], idList: String) = cards.count(_.idList == idList)
 
   sealed abstract class CardTransition {
     val date: Instant
@@ -83,9 +95,9 @@ trait Stats[P[_]] {
     }
 }
 
-object Stats {
-  def apply[P[_]: Monad: Api](implicit clk: Clock) = new Stats[P] {
-    val A: Monad[P] = implicitly
+object AvgTimeSpent {
+  def apply[P[_]: Monad: Api](implicit clk: Clock) = new AvgTimeSpent[P] {
+    val M: Monad[P] = implicitly
     val api: Api[P] = implicitly
     val clock: Clock = clk
   }

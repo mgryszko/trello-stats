@@ -58,16 +58,17 @@ object Cli {
   import scalaz.std.scalaFuture
   implicit private val monadFuture: Monad[Future] = scalaFuture.futureInstance
   implicit private val clock = Clock.systemDefaultZone
-  private val stats = Stats[Future]
+  private val numCards = NumCardsInLists[Future]
+  private val avgTime = AvgTimeSpent[Future]
 
   import Formatter._
   import scalaz.syntax.show._
 
-  def timeSpentInLists(idCard: String): Unit = println(result(() => stats.timeSpentInLists(idCard)).shows)
+  def timeSpentInLists(idCard: String): Unit = println(result(() => avgTime.timeSpentInLists(idCard)).shows)
 
-  def avgTimeSpentInLists(idBoard: String): Unit = println(result(() => stats.avgTimeSpentInLists(idBoard)).shows)
+  def avgTimeSpentInLists(idBoard: String): Unit = println(result(() => avgTime.avgTimeSpentInLists(idBoard)).shows)
 
-  def numCardsInLists(idBoard: String): Unit = println(result(() => stats.numCardsInLists(idBoard)).shows)
+  def numCardsInLists(idBoard: String): Unit = println(result(() => numCards.numCardsInLists(idBoard)).shows)
 
   private val timeout = 10 seconds
 

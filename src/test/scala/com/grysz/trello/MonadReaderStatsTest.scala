@@ -26,8 +26,6 @@ class MonadReaderStatsTest extends FlatSpec with TableDrivenPropertyChecks with 
 
   implicit val clock: Clock = Clock.fixed(Instant.parse("2017-03-10T12:00:00Z"), ZoneId.systemDefault)
 
-  val stats = Stats[Program]
-
   val trello = Trello(
     lists = List(
       TrelloList("idList1", "list1"),
@@ -104,14 +102,14 @@ class MonadReaderStatsTest extends FlatSpec with TableDrivenPropertyChecks with 
   )
 
   "Trello stats" should "get board lists and number of cards in each of them" in {
-    val numCardsByList = stats.numCardsInLists("idBoard").run(trello)
+    val numCardsByList = NumCardsInLists[Program].numCardsInLists("idBoard").run(trello)
 
     numCardsByList should equal (Map("list1" -> 2, "list2" -> 1, "list3" -> 0))
   }
 
   it should "calculate how much time did a card spent in every list" in {
     forAll(Table("idCard", "idCard1", "idCard2", "idCard3")) { (idCard) =>
-      val timesByList = stats.timeSpentInLists(idCard).run(trello)
+      val timesByList = AvgTimeSpent[Program].timeSpentInLists(idCard).run(trello)
 
       timesByList should equal(expectedTimeSpentInLists(idCard))
     }
@@ -120,7 +118,7 @@ class MonadReaderStatsTest extends FlatSpec with TableDrivenPropertyChecks with 
   it should "calculate average time a card spent in lists" in {
     val idBoard = "::idBoard::"
 
-    val result = stats.avgTimeSpentInLists(idBoard).run(trello)
+    val result = AvgTimeSpent[Program].avgTimeSpentInLists(idBoard).run(trello)
 
     result should equal(expectedAvgTimeSpentInLists)
   }

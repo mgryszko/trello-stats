@@ -19,13 +19,11 @@ class AsyncStatsTest extends FlatSpec with Matchers with Inspectors {
   import scalaz.std.scalaFuture
   implicit val monadFuture: Monad[Future] = scalaFuture.futureInstance
   implicit val clock: Clock = Clock.systemDefaultZone
-  val stats = Stats[Future]
-
   val idBoard = "5783d18ebed64e477bda0535"
   val idCard = "57f7b542839dd203cf551704"
 
   "Trello stats" should "get board lists and cards" in {
-    val numCardsByList = result(() => stats.numCardsInLists(idBoard))
+    val numCardsByList = result(() => NumCardsInLists[Future].numCardsInLists(idBoard))
 
     numCardsByList should not be empty
     forAtLeast(1, numCardsByList) { case (name, numCards) =>
@@ -35,7 +33,7 @@ class AsyncStatsTest extends FlatSpec with Matchers with Inspectors {
   }
 
   it should "calculate how much time spent a card in every list" in {
-    val timesByList = result(() => stats.timeSpentInLists(idCard))
+    val timesByList = result(() => AvgTimeSpent[Future].timeSpentInLists(idCard))
 
     timesByList should not be empty
     forAll(timesByList) { case (idList, time) =>
