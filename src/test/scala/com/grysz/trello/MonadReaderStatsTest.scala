@@ -66,7 +66,7 @@ class MonadReaderStatsTest extends FlatSpec with TableDrivenPropertyChecks with 
     )
   )
 
-  val expectedTimeSpentByList = Map(
+  val expectedTimeSpentInLists = Map(
     "idCard1" -> Map(
       "list1" -> Duration.parse("PT64H37M21.316S"),
       "list2" -> Duration.parse("PT309H38M33.444S"),
@@ -92,7 +92,7 @@ class MonadReaderStatsTest extends FlatSpec with TableDrivenPropertyChecks with 
     )
   )
 
-  val expectedAvgTimeSpentByList = Map(
+  val expectedAvgTimeSpentInLists = Map(
     "list1" -> Duration.parse("PT1641H58M33S"),
     "list2" -> Duration.parse("PT184H21M37S"),
     "list3" -> Duration.parse("PT23H52M56S"),
@@ -104,7 +104,7 @@ class MonadReaderStatsTest extends FlatSpec with TableDrivenPropertyChecks with 
   )
 
   "Trello stats" should "get board lists and number of cards in each of them" in {
-    val numCardsByList = stats.numCardsByList("idBoard").run(trello)
+    val numCardsByList = stats.numCardsInLists("idBoard").run(trello)
 
     numCardsByList should equal (Map("list1" -> 2, "list2" -> 1, "list3" -> 0))
   }
@@ -113,7 +113,7 @@ class MonadReaderStatsTest extends FlatSpec with TableDrivenPropertyChecks with 
     forAll(Table("idCard", "idCard1", "idCard2", "idCard3")) { (idCard) =>
       val timesByList = stats.timeSpentInLists(idCard).run(trello)
 
-      timesByList should equal(expectedTimeSpentByList(idCard))
+      timesByList should equal(expectedTimeSpentInLists(idCard))
     }
   }
 
@@ -122,6 +122,6 @@ class MonadReaderStatsTest extends FlatSpec with TableDrivenPropertyChecks with 
 
     val result = stats.avgTimeSpentInLists(idBoard).run(trello)
 
-    result should equal(expectedAvgTimeSpentByList)
+    result should equal(expectedAvgTimeSpentInLists)
   }
 }

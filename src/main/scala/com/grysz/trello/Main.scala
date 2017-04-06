@@ -39,7 +39,7 @@ object Main {
       case Some(config) => config.cmd match {
         case TimeSpent() => Cli.timeSpentInLists(config.idCard)
         case AvgTimeSpent() => Cli.avgTimeSpentInLists(config.idBoard)
-        case NumCards() => Cli.numCardsByList(config.idBoard)
+        case NumCards() => Cli.numCardsInLists(config.idBoard)
         case _ =>
       }
 
@@ -67,7 +67,7 @@ object Cli {
 
   def avgTimeSpentInLists(idBoard: String): Unit = println(result(() => stats.avgTimeSpentInLists(idBoard)).shows)
 
-  def numCardsByList(idBoard: String): Unit = println(result(() => stats.numCardsByList(idBoard)).shows)
+  def numCardsInLists(idBoard: String): Unit = println(result(() => stats.numCardsInLists(idBoard)).shows)
 
   private val timeout = 10 seconds
 

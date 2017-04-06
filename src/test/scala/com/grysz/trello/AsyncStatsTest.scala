@@ -25,7 +25,7 @@ class AsyncStatsTest extends FlatSpec with Matchers with Inspectors {
   val idCard = "57f7b542839dd203cf551704"
 
   "Trello stats" should "get board lists and cards" in {
-    val numCardsByList = result(() => stats.numCardsByList(idBoard))
+    val numCardsByList = result(() => stats.numCardsInLists(idBoard))
 
     numCardsByList should not be empty
     forAtLeast(1, numCardsByList) { case (name, numCards) =>

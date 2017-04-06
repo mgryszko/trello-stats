@@ -16,15 +16,15 @@ trait Stats[P[_]] {
   val api: Api[P]
   val clock: Clock
 
-  def numCardsByList(idBoard: String): P[Map[String, Int]] = {
+  def numCardsInLists(idBoard: String): P[Map[String, Int]] = {
     import scalaz.syntax.applicative._
 
     (api.openCards(idBoard) |@| api.openLists(idBoard))((cards, lists) => {
-      lists.map(l => (l.name, countCardsOfList(cards, l.id))).toMap
+      lists.map(l => (l.name, countListCards(cards, l.id))).toMap
     })
   }
 
-  private def countCardsOfList(cards: List[Card], idList: String) = cards.count(_.idList == idList)
+  private def countListCards(cards: List[Card], idList: String) = cards.count(_.idList == idList)
 
   sealed abstract class CardTransition {
     val date: Instant
