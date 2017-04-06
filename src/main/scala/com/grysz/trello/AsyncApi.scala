@@ -100,7 +100,7 @@ class AsyncApi(key: String, token: String)(implicit actorSystem: ActorSystem, ex
       Map("filter" -> "emailCard,createCard,updateCard:idList", "fields" -> "type,date,data"))
   }
 
-  private val client = new ThrottledClient()
+  private val client = new ThrottledClient(FiniteDuration(125, "ms"), 999)
 
   private def request[T](path: String, params: Map[String, String] = Map())
                         (implicit unmarshaller: Unmarshaller[ResponseEntity, T]): Future[T] = {
@@ -127,9 +127,10 @@ object AsyncApi {
     new AsyncApi(key, token)(actorSystem, executionContext)
 }
 
-class ThrottledClient(implicit actorSystem: ActorSystem, executionContext: ExecutionContext, materializer: Materializer) {
-  private val queue = Source.queue[(HttpRequest, Promise[HttpResponse])](10000, OverflowStrategy.dropNew)
-  private val tick = Source.tick(FiniteDuration(0, "s"), FiniteDuration(125, "ms"), ())
+class ThrottledClient(durationBetweenRequests: FiniteDuration, bufferSize: Int)(implicit actorSystem: ActorSystem, executionContext: ExecutionContext, materializer: Materializer) {
+  private val queue = Source.queue[(HttpRequest, Promise[HttpResponse])](bufferSize, OverflowStrategy.dropNew)
+  private val zeroDuration = FiniteDuration(0, "s")
+  private val tick = Source.tick(zeroDuration, durationBetweenRequests, ())
   private val poolFlow = Http().superPool[Promise[HttpResponse]]()
   private val sink: Sink[(Try[HttpResponse], Promise[HttpResponse]), Future[Done]] = Sink.foreach({
     case ((Success(resp), p)) => p.success(resp)
