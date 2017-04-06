@@ -80,11 +80,6 @@ trait JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
   }
 }
 
-object AsyncApi {
-  def apply(key: String, token: String)(implicit actorSystem: ActorSystem, executionContext: ExecutionContext) =
-    new AsyncApi(key, token)(actorSystem, executionContext)
-}
-
 class AsyncApi(key: String, token: String)(implicit actorSystem: ActorSystem, executionContext: ExecutionContext)
   extends Api[Future] with JsonProtocol {
 
@@ -105,9 +100,11 @@ class AsyncApi(key: String, token: String)(implicit actorSystem: ActorSystem, ex
       Map("filter" -> "emailCard,createCard,updateCard:idList", "fields" -> "type,date,data"))
   }
 
+  private val client = new ThrottledClient()
+
   private def request[T](path: String, params: Map[String, String] = Map())
                         (implicit unmarshaller: Unmarshaller[ResponseEntity, T]): Future[T] = {
-    queueRequest(HttpRequest(uri = uri(path, params))).flatMap(resp => {
+    client.request(HttpRequest(uri = uri(path, params))).flatMap(resp => {
       resp.status match {
         case OK => Unmarshal(resp.entity).to[T]
         case _ =>
@@ -118,9 +115,22 @@ class AsyncApi(key: String, token: String)(implicit actorSystem: ActorSystem, ex
     })
   }
 
-  private val poolFlow = Http().superPool[Promise[HttpResponse]]()
+  private def uri(path: String, params: Map[String, String]) = endpoint
+    .withPath(Uri.Path(path))
+    .withQuery(Query(authParams ++ params))
+
+  private def discardEntity(entity: ResponseEntity) = entity.dataBytes.runWith(Sink.ignore)
+}
+
+object AsyncApi {
+  def apply(key: String, token: String)(implicit actorSystem: ActorSystem, executionContext: ExecutionContext) =
+    new AsyncApi(key, token)(actorSystem, executionContext)
+}
+
+class ThrottledClient(implicit actorSystem: ActorSystem, executionContext: ExecutionContext, materializer: Materializer) {
   private val queue = Source.queue[(HttpRequest, Promise[HttpResponse])](10000, OverflowStrategy.dropNew)
   private val tick = Source.tick(FiniteDuration(0, "s"), FiniteDuration(125, "ms"), ())
+  private val poolFlow = Http().superPool[Promise[HttpResponse]]()
   private val sink: Sink[(Try[HttpResponse], Promise[HttpResponse]), Future[Done]] = Sink.foreach({
     case ((Success(resp), p)) => p.success(resp)
     case ((Failure(e), p)) => p.failure(e)
@@ -145,7 +155,7 @@ class AsyncApi(key: String, token: String)(implicit actorSystem: ActorSystem, ex
 
   private val queueStream = RunnableGraph.fromGraph(graph).run()
 
-  private def queueRequest(request: HttpRequest): Future[HttpResponse] = {
+  def request(request: HttpRequest): Future[HttpResponse] = {
     val responsePromise = Promise[HttpResponse]()
     queueStream.offer(request -> responsePromise).flatMap {
       case QueueOfferResult.Enqueued => responsePromise.future
@@ -155,10 +165,4 @@ class AsyncApi(key: String, token: String)(implicit actorSystem: ActorSystem, ex
         Future.failed(new RuntimeException("Queue was closed (pool shut down) while running the request"))
     }
   }
-
-  private def uri(path: String, params: Map[String, String]) = endpoint
-    .withPath(Uri.Path(path))
-    .withQuery(Query(authParams ++ params))
-
-  private def discardEntity(entity: ResponseEntity) = entity.dataBytes.runWith(Sink.ignore)
 }
