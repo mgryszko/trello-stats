@@ -42,5 +42,5 @@ class AsyncStatsTest extends FlatSpec with Matchers with Inspectors {
     }
   }
 
-  def result[T](asynchOp: () => Future[T]): T = Await.result(asynchOp(), 10 seconds)
+  def result[T](asyncOp: () => Future[T]): T = Await.result(asyncOp(), 10 seconds)
 }

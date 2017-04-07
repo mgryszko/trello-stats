@@ -1,6 +1,7 @@
 package com.grysz.trello
 
 import akka.actor.ActorSystem
+import com.grysz.trello.ApiTypes.IdCard
 import com.typesafe.config.ConfigFactory
 import org.scalatest.matchers.{MatchResult, Matcher}
 import org.scalatest.{FlatSpec, Inspectors, Matchers}
@@ -55,7 +56,7 @@ class AsyncApiTest extends FlatSpec with Matchers with Inspectors {
 
   def result[T](asynchOp: () => Future[T]): T = Await.result(asynchOp(), 10 seconds)
 
-  def cardActions(idCard: String) = result(() => api.cardActions(idCard)) |> sortByDate
+  def cardActions(idCard: IdCard) = result(() => api.cardActions(idCard)) |> sortByDate
 
   def sortByDate(actions: List[CardAction]) = actions.sortBy(_.date)
 

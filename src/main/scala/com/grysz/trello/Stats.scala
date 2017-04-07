@@ -2,6 +2,8 @@ package com.grysz.trello
 
 import java.time.{Clock, Duration, Instant}
 
+import com.grysz.trello.ApiTypes.{IdBoard, IdCard, IdList}
+
 import scalaz.{Applicative, Monad}
 
 trait NumCardsInLists[P[_]] {
@@ -10,13 +12,13 @@ trait NumCardsInLists[P[_]] {
   implicit val A: Applicative[P]
   val api: Api[P]
 
-  def numCardsInLists(idBoard: String): P[Map[String, Int]] = {
+  def numCardsInLists(idBoard: IdBoard): P[Map[IdBoard, Int]] = {
     (api.openCards(idBoard) |@| api.openLists(idBoard))((cards, lists) => {
       lists.map(l => (l.name, countListCards(cards, l.id))).toMap
     })
   }
 
-  private def countListCards(cards: List[Card], idList: String) = cards.count(_.idList == idList)
+  private def countListCards(cards: List[Card], idList: IdList) = cards.count(_.idList == idList)
 }
 
 object NumCardsInLists {
@@ -38,22 +40,24 @@ trait AvgTimeSpent[P[_]] {
   val api: Api[P]
   val clock: Clock
 
+  type ListName = String
+
   sealed abstract class CardTransition {
     val date: Instant
     val listName: String
   }
-  case class CardEnteredList(date: Instant, listName: String) extends CardTransition
-  case class CardLeftList(date: Instant, listName: String) extends CardTransition
-  case class CardStillInList(listName: String) extends CardTransition {
+  case class CardEnteredList(date: Instant, listName: ListName) extends CardTransition
+  case class CardLeftList(date: Instant, listName: ListName) extends CardTransition
+  case class CardStillInList(listName: ListName) extends CardTransition {
     val date: Instant = clock.instant()
   }
 
-  def avgTimeSpentInLists(idBoard: String): P[Map[String, Duration]] = {
+  def avgTimeSpentInLists(idBoard: IdBoard): P[Map[ListName, Duration]] = {
     import scalaz.syntax.traverse._
 
     api.openCards(idBoard) >>= { cards =>
       cards.map(_.id).point[P] >>= { idCards =>
-        val timesOfAllCards: P[List[Map[String, Duration]]] = idCards.map(timeSpentInLists).sequence
+        val timesOfAllCards: P[List[Map[ListName, Duration]]] = idCards.map(timeSpentInLists).sequence
         timesOfAllCards >>= { times =>
           val accumulatedTimesByList = times.map(_.mapValues(List(_))).fold(Map.empty)(_ |+| _)
           AvgDuration.avg(accumulatedTimesByList).mapValues(_.stripMillis).point[P]
@@ -62,7 +66,7 @@ trait AvgTimeSpent[P[_]] {
     }
   }
 
-  def timeSpentInLists(idCard: String): P[Map[String, Duration]] = {
+  def timeSpentInLists(idCard: IdCard): P[Map[ListName, Duration]] = {
     api.cardActions(idCard)
       .map(_.sortBy(_.date))
       .map(toTransitions)
@@ -77,9 +81,10 @@ trait AvgTimeSpent[P[_]] {
   }
 
   private def toTransition(action: CardAction): List[CardTransition] = action match {
-    case CreateCardAction(date, idList) => List(CardEnteredList(date, idList))
-    case EmailCardAction(date, idList) => List(CardEnteredList(date, idList))
-    case UpdateListAction(date, idListBefore, idListAfter) => List(CardLeftList(date, idListBefore), CardEnteredList(date, idListAfter))
+    case CreateCardAction(date, listName) => List(CardEnteredList(date, listName))
+    case EmailCardAction(date, listName) => List(CardEnteredList(date, listName))
+    case UpdateListAction(date, listNameBefore, listNameAfter) =>
+      List(CardLeftList(date, listNameBefore), CardEnteredList(date, listNameAfter))
   }
 
   private def tupled[A](xs: Iterable[A]): List[(A, A)] = xs.grouped(2).map { x => (x.head, x.tail.head) }.toList
@@ -88,8 +93,8 @@ trait AvgTimeSpent[P[_]] {
     case (start, end) => (start.listName, Duration.between(start.date, end.date))
   }
 
-  private def toMap(transitions: List[(String, Duration)]): Map[String, Duration] =
-    transitions.foldLeft(Map.empty[String, Duration]) { case (listsByTime, (listName, duration)) =>
+  private def toMap(transitions: List[(ListName, Duration)]): Map[ListName, Duration] =
+    transitions.foldLeft(Map.empty[ListName, Duration]) { case (listsByTime, (listName, duration)) =>
       val summedDuration = listsByTime.get(listName).fold(duration)(_.plus(duration))
       listsByTime + (listName -> summedDuration)
     }

@@ -2,6 +2,7 @@ package com.grysz.trello
 
 import java.time.{Clock, Duration, Instant, ZoneId}
 
+import com.grysz.trello.ApiTypes.{IdBoard, IdCard}
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{FlatSpec, Matchers}
 
@@ -17,11 +18,11 @@ class MonadReaderStatsTest extends FlatSpec with TableDrivenPropertyChecks with 
   val M = MonadReader[Program, Trello]
 
   implicit val api = new Api[Program] {
-    def openLists(idBoard: String): Program[List[TrelloList]] = M.ask >>= (t => M.point(t.lists))
+    def openLists(idBoard: IdBoard): Program[List[TrelloList]] = M.ask >>= (t => M.point(t.lists))
 
-    def openCards(idBoard: String): Program[List[Card]] = M.ask >>= (t => M.point(t.cards))
+    def openCards(idBoard: IdBoard): Program[List[Card]] = M.ask >>= (t => M.point(t.cards))
 
-    def cardActions(id: String): Program[List[CardAction]] = M.ask >>= (t => M.point(t.actions(id)))
+    def cardActions(id: IdCard): Program[List[CardAction]] = M.ask >>= (t => M.point(t.actions(id)))
   }
 
   implicit val clock: Clock = Clock.fixed(Instant.parse("2017-03-10T12:00:00Z"), ZoneId.systemDefault)

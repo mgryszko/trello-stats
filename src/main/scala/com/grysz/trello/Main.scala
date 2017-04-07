@@ -3,6 +3,7 @@ package com.grysz.trello
 import java.time.Clock
 
 import akka.actor.ActorSystem
+import com.grysz.trello.ApiTypes.{IdBoard, IdCard}
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.{Await, Future}
@@ -64,11 +65,11 @@ object Cli {
   import Formatter._
   import scalaz.syntax.show._
 
-  def timeSpentInLists(idCard: String): Unit = println(result(() => avgTime.timeSpentInLists(idCard)).shows)
+  def timeSpentInLists(idCard: IdCard): Unit = println(result(() => avgTime.timeSpentInLists(idCard)).shows)
 
-  def avgTimeSpentInLists(idBoard: String): Unit = println(result(() => avgTime.avgTimeSpentInLists(idBoard)).shows)
+  def avgTimeSpentInLists(idBoard: IdBoard): Unit = println(result(() => avgTime.avgTimeSpentInLists(idBoard)).shows)
 
-  def numCardsInLists(idBoard: String): Unit = println(result(() => numCards.numCardsInLists(idBoard)).shows)
+  def numCardsInLists(idBoard: IdBoard): Unit = println(result(() => numCards.numCardsInLists(idBoard)).shows)
 
   private val timeout = 10 seconds
 

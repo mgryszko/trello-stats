@@ -13,6 +13,7 @@ import akka.http.scaladsl.model.{HttpRequest, HttpResponse, ResponseEntity, Uri}
 import akka.http.scaladsl.unmarshalling.{Unmarshal, Unmarshaller}
 import akka.stream._
 import akka.stream.scaladsl.{GraphDSL, RunnableGraph, Sink, Source, ZipWith}
+import com.grysz.trello.ApiTypes.{IdBoard, IdCard}
 import spray.json._
 
 import scala.concurrent.duration.FiniteDuration
@@ -45,8 +46,8 @@ trait JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
       val cardType = fields("type")
       cardType match {
         case JsString("createCard") => readCreateCardAction(fields)
-        case JsString("updateCard") => readUpdateCardAction(fields)
         case JsString("emailCard") => readEmailCardAction(fields)
+        case JsString("updateCard") => readUpdateCardAction(fields)
         case _ => deserializationError(s"action $cardType not supported")
       }
     }
@@ -57,20 +58,20 @@ trait JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
         listName = listName(data(fields)("list"))
       )
 
-    private def readUpdateCardAction(fields: Map[String, JsValue]) = {
-      val dataFields = data(fields)
-      UpdateListAction(
-        date = date(fields),
-        idListBefore = listName(dataFields("listBefore")),
-        idListAfter = listName(dataFields("listAfter"))
-      )
-    }
-
     private def readEmailCardAction(fields: Map[String, JsValue]) =
       EmailCardAction(
         date = date(fields),
         listName = listName(data(fields)("list"))
       )
+
+    private def readUpdateCardAction(fields: Map[String, JsValue]) = {
+      val dataFields = data(fields)
+      UpdateListAction(
+        date = date(fields),
+        listNameBefore = listName(dataFields("listBefore")),
+        listNameAfter = listName(dataFields("listAfter"))
+      )
+    }
 
     private def date(fields: Map[String, JsValue]) = fields("date").convertTo[Instant]
 
@@ -87,20 +88,20 @@ class AsyncApi(key: String, token: String)(implicit actorSystem: ActorSystem, ex
   private val authParams = Map("key" -> key, "token" -> token)
   private implicit val actorMaterializer = ActorMaterializer()
 
-  def openLists(idBoard: String): Future[List[TrelloList]] = {
+  def openLists(idBoard: IdBoard): Future[List[TrelloList]] = {
     request[List[TrelloList]](s"/1/boards/$idBoard/lists/open")
   }
 
-  def openCards(idBoard: String): Future[List[Card]] = {
+  def openCards(idBoard: IdBoard): Future[List[Card]] = {
     request[List[Card]](s"/1/boards/$idBoard/cards/open")
   }
 
-  def cardActions(idCard: String): Future[List[CardAction]] = {
+  def cardActions(idCard: IdCard): Future[List[CardAction]] = {
     request[List[CardAction]](s"/1/cards/$idCard/actions",
       Map("filter" -> "emailCard,createCard,updateCard:idList", "fields" -> "type,date,data"))
   }
 
-  private val client = new ThrottledClient(FiniteDuration(125, "ms"), 999)
+  private val client = new ThrottledClient(durationBetweenRequests = FiniteDuration(125, "ms"), bufferSize = 999)
 
   private def request[T](path: String, params: Map[String, String] = Map())
                         (implicit unmarshaller: Unmarshaller[ResponseEntity, T]): Future[T] = {
