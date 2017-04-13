@@ -6,23 +6,32 @@ import com.grysz.trello.ApiTypes.{IdBoard, IdCard}
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{FlatSpec, Matchers}
 
-import scalaz.{MonadReader, Reader}
+import scalaz.{MonadListen, MonadReader, Reader, ReaderWriterState}
 
 class MonadReaderStatsTest extends FlatSpec with TableDrivenPropertyChecks with Matchers {
 
   case class Trello(lists: List[TrelloList], cards: List[Card], actions: Map[String, List[CardAction]])
 
+  import scalaz.std.list._
   import scalaz.syntax.monad._
 
-  type Program[A] = Reader[Trello, A]
+  type Program[A] = ReaderWriterState[Trello, List[String], Unit, A]
+
   val M = MonadReader[Program, Trello]
+  val MW = MonadListen[Program, List[String]]
 
   implicit val api = new Api[Program] {
-    def openLists(idBoard: IdBoard): Program[List[TrelloList]] = M.ask >>= (t => M.point(t.lists))
+    def openLists(idBoard: IdBoard): Program[List[TrelloList]] = M.ask >>= (t =>
+      MW.tell(List(t.lists.toString)) >> M.point(t.lists)
+    )
 
-    def openCards(idBoard: IdBoard): Program[List[Card]] = M.ask >>= (t => M.point(t.cards))
+    def openCards(idBoard: IdBoard): Program[List[Card]] = M.ask >>= (t =>
+      MW.tell(List(t.cards.toString)) >> M.point(t.cards)
+    )
 
-    def cardActions(id: IdCard): Program[List[CardAction]] = M.ask >>= (t => M.point(t.actions(id)))
+    def cardActions(id: IdCard): Program[List[CardAction]] = M.ask >>= (t =>
+      MW.tell(List(t.actions(id).toString)) >> M.point(t.actions(id))
+    )
   }
 
   implicit val clock: Clock = Clock.fixed(Instant.parse("2017-03-10T12:00:00Z"), ZoneId.systemDefault)
@@ -103,14 +112,14 @@ class MonadReaderStatsTest extends FlatSpec with TableDrivenPropertyChecks with 
   )
 
   "Trello stats" should "get board lists and number of cards in each of them" in {
-    val numCardsByList = NumCardsInLists[Program].numCardsInLists("idBoard").run(trello)
+    val numCardsByList = NumCardsInLists[Program].numCardsInLists("idBoard").eval(trello, ())._2
 
     numCardsByList should equal (Map("list1" -> 2, "list2" -> 1, "list3" -> 0))
   }
 
   it should "calculate how much time did a card spent in every list" in {
     forAll(Table("idCard", "idCard1", "idCard2", "idCard3")) { (idCard) =>
-      val timesByList = AvgTimeSpent[Program].timeSpentInLists(idCard).run(trello)
+      val timesByList = AvgTimeSpent[Program].timeSpentInLists(idCard).eval(trello, ())._2
 
       timesByList should equal(expectedTimeSpentInLists(idCard))
     }
@@ -119,7 +128,7 @@ class MonadReaderStatsTest extends FlatSpec with TableDrivenPropertyChecks with 
   it should "calculate average time a card spent in lists" in {
     val idBoard = "::idBoard::"
 
-    val result = AvgTimeSpent[Program].avgTimeSpentInLists(idBoard).run(trello)
+    val result = AvgTimeSpent[Program].avgTimeSpentInLists(idBoard).eval(trello, ())._2
 
     result should equal(expectedAvgTimeSpentInLists)
   }

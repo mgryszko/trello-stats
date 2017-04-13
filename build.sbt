@@ -6,6 +6,8 @@ version := "0.1.0-SNAPSHOT"
 
 scalaVersion := "2.12.1"
 
+addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.3")
+
 libraryDependencies ++= Seq(
   "org.scalaz" %% "scalaz-core" % "7.2.8",
   "com.typesafe.akka" %% "akka-http" % "10.0.0",

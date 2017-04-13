@@ -4,12 +4,12 @@ import java.time.{Clock, Duration, Instant}
 
 import com.grysz.trello.ApiTypes.{IdBoard, IdCard, IdList}
 
-import scalaz.{Applicative, Monad}
+import scalaz.Monad
 
 trait NumCardsInLists[P[_]] {
   import scalaz.syntax.applicative._
 
-  implicit val A: Applicative[P]
+  implicit val M: Monad[P]
   val api: Api[P]
 
   def numCardsInLists(idBoard: IdBoard): P[Map[IdBoard, Int]] = {
@@ -22,8 +22,8 @@ trait NumCardsInLists[P[_]] {
 }
 
 object NumCardsInLists {
-  def apply[P[_]: Applicative: Api] = new NumCardsInLists[P] {
-    val A: Applicative[P] = implicitly
+  def apply[P[_]: Monad: Api] = new NumCardsInLists[P] {
+    val M: Monad[P] = implicitly
     val api: Api[P] = implicitly
   }
 }
