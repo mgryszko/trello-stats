@@ -4,27 +4,29 @@ import java.time.{Clock, Duration, Instant}
 
 import com.grysz.trello.ApiTypes.{IdBoard, IdCard, IdList}
 
-import scalaz.Monad
+import scalaz.MonadTell
 
 trait NumCardsInLists[P[_]] {
-  import scalaz.syntax.applicative._
+  import scalaz.syntax.monad._
 
-  implicit val M: Monad[P]
+  implicit val M: MonadTell[P, List[String]]
   val api: Api[P]
 
   def numCardsInLists(idBoard: IdBoard): P[Map[IdBoard, Int]] = {
-    (api.openCards(idBoard) |@| api.openLists(idBoard))((cards, lists) => {
-      lists.map(l => (l.name, countListCards(cards, l.id))).toMap
-    })
+    for {
+      cards <- api.openCards(idBoard)
+      lists <- api.openLists(idBoard)
+      _ <- M.tell(List(s"Open lists: $lists", s"Open cards: $cards"))
+    } yield lists.map(l => (l.name, countListCards(cards, l.id))).toMap
   }
 
   private def countListCards(cards: List[Card], idList: IdList) = cards.count(_.idList == idList)
 }
 
 object NumCardsInLists {
-  def apply[P[_]: Monad: Api] = new NumCardsInLists[P] {
-    val M: Monad[P] = implicitly
-    val api: Api[P] = implicitly
+  def apply[P[_]](implicit MT: MonadTell[P, List[String]], API: Api[P]) = new NumCardsInLists[P] {
+    val M: MonadTell[P, List[String]] = MT
+    val api: Api[P] = API
   }
 }
 
@@ -36,7 +38,7 @@ trait AvgTimeSpent[P[_]] {
   import scalaz.syntax.monad._
   import scalaz.syntax.semigroup._
 
-  implicit val M: Monad[P]
+  implicit val M: MonadTell[P, List[String]]
   val api: Api[P]
   val clock: Clock
 
@@ -55,24 +57,25 @@ trait AvgTimeSpent[P[_]] {
   def avgTimeSpentInLists(idBoard: IdBoard): P[Map[ListName, Duration]] = {
     import scalaz.syntax.traverse._
 
-    api.openCards(idBoard) >>= { cards =>
-      cards.map(_.id).point[P] >>= { idCards =>
-        val timesOfAllCards: P[List[Map[ListName, Duration]]] = idCards.map(timeSpentInLists).sequence
-        timesOfAllCards >>= { times =>
-          val accumulatedTimesByList = times.map(_.mapValues(List(_))).fold(Map.empty)(_ |+| _)
-          AvgDuration.avg(accumulatedTimesByList).mapValues(_.stripMillis).point[P]
-        }
-      }
-    }
+    for {
+      cards <- api.openCards(idBoard)
+      _ <- M.tell(List(s"Cards: ${cards.size}"))
+      idCards <- cards.map(_.id).point[P]
+      times <- idCards.map(timeSpentInLists).sequence: P[List[Map[ListName, Duration]]]
+      accumulatedTimesByList <- accumulatedTimesSpentInList(times).point[P]
+    } yield AvgDuration.avg(accumulatedTimesByList).mapValues(_.stripMillis)
   }
 
   def timeSpentInLists(idCard: IdCard): P[Map[ListName, Duration]] = {
-    api.cardActions(idCard)
-      .map(_.sortBy(_.date))
-      .map(toTransitions)
-      .map(tupled)
-      .map(durationInList)
-      .map(toMap)
+    for {
+      actions <- api.cardActions(idCard).map(_.sortBy(_.date))
+      transitions <- toTransitions(actions).point[P]
+      _ <- M.tell(List(s"idCard: $idCard, transitions: $transitions"))
+      pairedTransitions <- tupled(transitions).point[P]
+      durations <- durationInList(pairedTransitions).point[P]
+      durationsByListName <- toMap(durations).point[P]
+      _ <- M.tell(List(s"idCard: $idCard, durations: $durationsByListName"))
+    } yield durationsByListName
   }
 
   private def toTransitions(actions: List[CardAction]): List[CardTransition] = {
@@ -98,12 +101,15 @@ trait AvgTimeSpent[P[_]] {
       val summedDuration = listsByTime.get(listName).fold(duration)(_.plus(duration))
       listsByTime + (listName -> summedDuration)
     }
+
+  private def accumulatedTimesSpentInList(times: List[Map[ListName, Duration]]): Map[ListName, List[Duration]] =
+    times.map(_.mapValues(List(_))).fold(Map.empty)(_ |+| _)
 }
 
 object AvgTimeSpent {
-  def apply[P[_]: Monad: Api](implicit clk: Clock) = new AvgTimeSpent[P] {
-    val M: Monad[P] = implicitly
-    val api: Api[P] = implicitly
-    val clock: Clock = clk
+  def apply[P[_]](implicit MT: MonadTell[P, List[String]], API: Api[P], CLK: Clock) = new AvgTimeSpent[P] {
+    val M: MonadTell[P, List[String]] = MT
+    val api: Api[P] = API
+    val clock: Clock = CLK
   }
 }

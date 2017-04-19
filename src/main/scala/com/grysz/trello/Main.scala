@@ -6,9 +6,9 @@ import akka.actor.ActorSystem
 import com.grysz.trello.ApiTypes.{IdBoard, IdCard}
 import com.typesafe.config.ConfigFactory
 
-import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
-import scalaz.Monad
+import scala.concurrent.{Await, Future}
+import scalaz.{Monad, MonadTrans, ReaderWriterStateT}
 
 object Main {
   abstract class Command
@@ -53,26 +53,42 @@ object Cli {
   private val config = ConfigFactory.load()
   implicit private val actorSystem = ActorSystem("TrelloApi", config)
   import actorSystem.dispatcher
-
-  implicit private val api = AsyncApi(config.getString("trello.key"), config.getString("trello.token"))
+  private val api = AsyncApi(config.getString("trello.key"), config.getString("trello.token"))
 
   import scalaz.std.scalaFuture
   implicit private val monadFuture: Monad[Future] = scalaFuture.futureInstance
+  import scalaz.std.list._
+  type Program[A] = ReaderWriterStateT[Future, Unit, List[String], Unit, A]
+  implicit private val loggingApi: Api[Program] = new Api[Program] {
+    private val MT = MonadTrans[ReaderWriterStateT[?[_], Unit, List[String], Unit, ?]]
+    def openLists(idBoard: IdBoard): Program[List[TrelloList]] = MT.liftM(api.openLists(idBoard))
+
+    def openCards(idBoard: IdBoard): Program[List[Card]] = MT.liftM(api.openCards(idBoard))
+
+    def cardActions(idCard: IdCard): Program[List[CardAction]] = MT.liftM(api.cardActions(idCard))
+  }
+
   implicit private val clock = Clock.systemDefaultZone
-  private val numCards = NumCardsInLists[Future]
-  private val avgTime = AvgTimeSpent[Future]
+
+  private val numCards = NumCardsInLists[Program]
+  private val avgTime = AvgTimeSpent[Program]
 
   import Formatter._
   import scalaz.syntax.show._
 
-  def timeSpentInLists(idCard: IdCard): Unit = println(result(() => avgTime.timeSpentInLists(idCard)).shows)
+  def timeSpentInLists(idCard: IdCard): Unit = {
+    val (_, timeSpent) = Await.result(avgTime.timeSpentInLists(idCard).eval((), ()), 30 seconds)
+    println(timeSpent.shows)
+  }
 
-  def avgTimeSpentInLists(idBoard: IdBoard): Unit = println(result(() => avgTime.avgTimeSpentInLists(idBoard)).shows)
+  def avgTimeSpentInLists(idBoard: IdBoard): Unit = {
+    val (_, avgTimeSpent) = Await.result(avgTime.avgTimeSpentInLists(idBoard).eval((), ()), 5 minutes)
+    println(avgTimeSpent.shows)
+  }
 
-  def numCardsInLists(idBoard: IdBoard): Unit = println(result(() => numCards.numCardsInLists(idBoard)).shows)
-
-  private val timeout = 10 seconds
-
-  private def result[T](asynchOp: () => Future[T]): T = Await.result(asynchOp(), timeout)
+  def numCardsInLists(idBoard: IdBoard): Unit = {
+    val (_, num) = Await.result(numCards.numCardsInLists(idBoard).eval((), ()), 30 seconds)
+    println(num.shows)
+  }
 }
 
