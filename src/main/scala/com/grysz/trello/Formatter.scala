@@ -14,10 +14,13 @@ object Formatter {
 
   implicit val showDuration: Show[Duration] = new Show[Duration] {
     override def shows(f: Duration): String = {
-      val h = f.toHours
-      val m = f.minusHours(h).toMinutes
-      val s = f.minusHours(h).minusMinutes(m).getSeconds
-      s"${h}h ${m}m ${s}s"
+      val d = f.toDays
+      val fHours = f.minusDays(d)
+      val h = fHours.toHours
+      val fMins = fHours.minusHours(h)
+      val m = fMins.toMinutes
+      val s = fMins.minusMinutes(m).getSeconds
+      s"${d}d ${h}h ${m}m ${s}s"
     }
   }
 

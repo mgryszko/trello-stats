@@ -19,11 +19,11 @@ class FormatterTest extends FlatSpec with Matchers {
   }
 
   it should "format a duration" in {
-    Duration.ofSeconds(0).shows should equal("0h 0m 0s")
-    Duration.ofMillis(500).shows should equal("0h 0m 0s")
-    Duration.ofMillis(999).shows should equal("0h 0m 0s")
-    Duration.ofHours(1).plusMinutes(61).shows should equal("2h 1m 0s")
-    Duration.ofDays(1).plusHours(2).plusMinutes(3).plusSeconds(4).shows should equal("26h 3m 4s")
+    Duration.ofSeconds(0).shows should equal("0d 0h 0m 0s")
+    Duration.ofMillis(500).shows should equal("0d 0h 0m 0s")
+    Duration.ofMillis(999).shows should equal("0d 0h 0m 0s")
+    Duration.ofHours(1).plusMinutes(61).shows should equal("0d 2h 1m 0s")
+    Duration.ofDays(1).plusHours(2).plusMinutes(3).plusSeconds(4).shows should equal("1d 2h 3m 4s")
   }
 
   it should "format a map" in {
