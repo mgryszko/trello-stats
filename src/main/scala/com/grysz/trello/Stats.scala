@@ -4,19 +4,22 @@ import java.time.{Clock, Duration, Instant}
 
 import com.grysz.trello.ApiTypes.{IdBoard, IdCard, IdList}
 
-import scalaz.MonadTell
+import scalaz.{MonadTell, Monoid}
 
-trait NumCardsInLists[P[_]] {
+trait NumCardsInLists[P[_], L[String]] {
   import scalaz.syntax.monad._
 
-  implicit val M: MonadTell[P, List[String]]
+  implicit val M: MonadTell[P, L[String]]
+  implicit val L: Monoid[L[String]]
+  implicit val wrap: String => L[String]
   val api: Api[P]
 
   def numCardsInLists(idBoard: IdBoard): P[Map[IdBoard, Int]] = {
     for {
       cards <- api.openCards(idBoard)
+      _ <- M.tell(wrap(s"Open cards: $cards"))
       lists <- api.openLists(idBoard)
-      _ <- M.tell(List(s"Open lists: $lists", s"Open cards: $cards"))
+      _ <- M.tell(wrap(s"Open lists: $lists"))
     } yield lists.map(l => (l.name, countListCards(cards, l.id))).toMap
   }
 
@@ -24,8 +27,12 @@ trait NumCardsInLists[P[_]] {
 }
 
 object NumCardsInLists {
-  def apply[P[_]](implicit MT: MonadTell[P, List[String]], API: Api[P]) = new NumCardsInLists[P] {
+  def apply[P[_]](implicit MT: MonadTell[P, List[String]], API: Api[P]) = new NumCardsInLists[P, List] {
+    import scalaz.std.list._
+
     val M: MonadTell[P, List[String]] = MT
+    val L: Monoid[List[String]] = Monoid[List[String]]
+    val wrap: (String => List[String]) = List(_)
     val api: Api[P] = API
   }
 }
