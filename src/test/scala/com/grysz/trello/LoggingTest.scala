@@ -3,32 +3,25 @@ package com.grysz.trello
 import org.scalatest.{FlatSpec, Matchers}
 
 import scalaz.effect.IO
-import scalaz.{Monad, MonadReader, MonadTell, ReaderWriterState}
+import scalaz.{Monad, MonadTell}
 
 trait Greeter[P[_]] {
   implicit val M: Monad[P]
-  val RD: MonadReader[P, String]
   val WR: MonadTell[P, String]
 
   import scalaz.syntax.monad._
 
-  def greet: P[String] = for {
-    greeting <- RD.ask
-    _ <- WR.tell(s"greeting $greeting")
-  } yield greeting
+  def greet(greeting: String): P[String] = {
+    val g = s"greeting $greeting"
+    WR.tell(g) >> M.point(g)
+  }
 }
 
 class LoggingTest extends FlatSpec with Matchers {
-  type Program[A] = ReaderWriterState[String, String, Unit, A]
+  import scalaz.syntax.monad._
+  import scalaz.effect.IO._
 
-  import scalaz.std.string._
-
-  val MR = MonadReader[Program, String]
-  val MW = MonadTell[Program, String]
-
-  val MWIO = new MonadTell[IO, String] {
-
-    import scalaz.syntax.monad._
+  val MW = new MonadTell[IO, String] {
 
     def writer[A](w: String, v: A): IO[A] = IO.putStrLn(w) >> point(v)
 
@@ -37,15 +30,13 @@ class LoggingTest extends FlatSpec with Matchers {
     def bind[A, B](fa: IO[A])(f: (A) => IO[B]): IO[B] = fa flatMap f
   }
 
-  val greeter: Greeter[Program] = new Greeter[Program] {
-    val M: Monad[Program] = Monad[Program]
-    val RD: MonadReader[Program, String] = MR
-    val WR: MonadTell[Program, String] = MW
+  val greeter: Greeter[IO] = new Greeter[IO] {
+    implicit val M: Monad[IO] = Monad[IO]
+    val WR: MonadTell[IO, String] = MW
   }
 
   it should "greet and log" in {
-    val (log, _) = greeter.greet.eval("Marcin", ())
-
+    val log = greeter.greet("Marcin").unsafePerformIO()
     log should equal("greeting Marcin")
   }
 }
