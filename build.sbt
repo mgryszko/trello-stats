@@ -9,7 +9,8 @@ scalaVersion := "2.12.2"
 addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.3")
 
 libraryDependencies ++= Seq(
-  "org.scalaz" %% "scalaz-core" % "7.2.8",
+  "org.scalaz" %% "scalaz-core" % "7.2.12",
+  "org.scalaz" %% "scalaz-effect" % "7.2.12",
   "com.typesafe.akka" %% "akka-http" % "10.0.0",
   "com.typesafe.akka" %% "akka-http-spray-json" % "10.0.0",
   "com.github.scopt" %% "scopt" % "3.5.0",
